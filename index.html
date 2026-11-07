@@ -50,6 +50,7 @@
   <button class="sec" id="bEnd">🌙 Нескінченна зміна</button>
   <button class="sec" id="bShop">🛠 Підсилення</button>
   <button class="sec" id="bRate">🏆 Рейтинг міст</button>
+  <button class="ghost" id="bSnd"></button>
   <small id="best"></small>
 </div></div>
 
@@ -79,6 +80,7 @@
 <div class="ov dim hide" id="pause"><div class="card">
   <h2>⏸ Пауза</h2>
   <button id="bResume">▶ Продовжити</button>
+  <button class="ghost" id="bSnd2"></button>
   <button class="ghost" id="bQuit">Вийти в меню</button>
 </div></div>
 
@@ -199,17 +201,83 @@ const clouds = Array.from({ length: 5 }, () => ({ x: Math.random() * W, y: rnd(6
 const city = Array.from({ length: 12 }, (_, i) => ({ x: i * 32 - 8, w: 24 + Math.random() * 14, h: 40 + Math.random() * 110, win: Array.from({ length: 15 }, () => Math.random()) }));
 
 // ======================= звук / вібро =======================
-let ac = null, noiseBuf = null;
-function audio() { try { if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); noiseBuf = ac.createBuffer(1, ac.sampleRate * .6, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } if (ac.state === "suspended") ac.resume(); } catch (e) {} }
+let ac = null, noiseBuf = null, master = null, muted = false; try { muted = localStorage.getItem("svit_mute") === "1"; } catch (e) {}
+function audio() { try { if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); master = ac.createGain(); master.gain.value = muted ? 0 : .6; const cp = ac.createDynamicsCompressor(); master.connect(cp); cp.connect(ac.destination); noiseBuf = ac.createBuffer(1, ac.sampleRate * .6, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } if (ac.state === "suspended") ac.resume(); } catch (e) {} }
 function beep(f, d, type = "square", vol = .04, slide = 0) {
   try { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
     if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f + slide), ac.currentTime + d);
-    g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch (e) {}
+    g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d); o.connect(g); g.connect(master); o.start(); o.stop(ac.currentTime + d); } catch (e) {}
 }
 function boomSnd(vol = .18, lp = 700) {
   try { if (!ac) return; const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = "lowpass"; f.frequency.value = lp;
-    g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + .55); s.connect(f); f.connect(g); g.connect(ac.destination); s.start(); } catch (e) {}
+    g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + .55); s.connect(f); f.connect(g); g.connect(master); s.start(); } catch (e) {}
 }
+
+// ---- рушій звуку (усе синтезується, без файлів) ----
+const S = (() => {
+  const T = () => ac.currentTime;
+  const tone = (f0, f1, d, type = "sine", vol = .05, delay = 0, lp = 0) => { try { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.type = type; const t0 = T() + delay; o.frequency.setValueAtTime(f0, t0); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t0 + d);
+    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(.02, d / 4)); g.gain.exponentialRampToValueAtTime(.0001, t0 + d); let n = o; if (lp) { const f = ac.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = lp; o.connect(f); n = f; } n.connect(g); g.connect(master); o.start(t0); o.stop(t0 + d + .05); } catch (e) {} };
+  const noise = (d, vol, type, f0, f1, delay = 0, q = .8) => { try { if (!ac) return; const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = type; f.Q.value = q; const t0 = T() + delay; f.frequency.setValueAtTime(f0, t0); if (f1 !== f0) f.frequency.exponentialRampToValueAtTime(f1, t0 + d);
+    g.gain.setValueAtTime(.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + Math.min(.03, d / 4)); g.gain.exponentialRampToValueAtTime(.0001, t0 + d); s.connect(f); f.connect(g); g.connect(master); s.start(t0, Math.random() * .2, Math.min(d + .05, .55)); } catch (e) {} };
+  // ----- безперервні шари: шахед (мопедний двигун), крилата (турбіна), Герань-3 (реактивний свист), тло -----
+  let L = null;
+  function build() {
+    if (L || !ac) return; L = {};
+    const pan = () => { const p = ac.createStereoPanner ? ac.createStereoPanner() : null; return p; };
+    // шахед: два пилкоподібні осцилятори + швидке тремоло
+    { const o1 = ac.createOscillator(), o2 = ac.createOscillator(), lp = ac.createBiquadFilter(), am = ac.createGain(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain(), p = pan();
+      o1.type = "sawtooth"; o2.type = "sawtooth"; lp.type = "lowpass"; lp.frequency.value = 650; am.gain.value = .6; lfo.frequency.value = 34; lg.gain.value = .4; lfo.connect(lg); lg.connect(am.gain); g.gain.value = 0;
+      o1.connect(lp); o2.connect(lp); lp.connect(am); am.connect(g); if (p) { g.connect(p); p.connect(master); } else g.connect(master); o1.start(); o2.start(); lfo.start(); L.shahed = { o1, o2, g, p, lfo }; }
+    // крилата ракета: смуговий шум
+    { const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(), p = pan(); s.buffer = noiseBuf; s.loop = true; f.type = "bandpass"; f.Q.value = 1.4; f.frequency.value = 900; g.gain.value = 0;
+      s.connect(f); f.connect(g); if (p) { g.connect(p); p.connect(master); } else g.connect(master); s.start(); L.cruise = { s, f, g, p }; }
+    // Герань-3: тонкий реактивний свист
+    { const o = ac.createOscillator(), o2 = ac.createOscillator(), lp = ac.createBiquadFilter(), g = ac.createGain(), p = pan(); o.type = "sawtooth"; o2.type = "square"; lp.type = "lowpass"; lp.frequency.value = 1500; g.gain.value = 0;
+      o.connect(lp); o2.connect(lp); lp.connect(g); if (p) { g.connect(p); p.connect(master); } else g.connect(master); o.start(); o2.start(); L.jet = { o, o2, g, p }; }
+    // тло: тривожний низький пад
+    { const a = ac.createOscillator(), b = ac.createOscillator(), lp = ac.createBiquadFilter(), g = ac.createGain(), lfo = ac.createOscillator(), lg = ac.createGain();
+      a.type = "sine"; a.frequency.value = 55; b.type = "triangle"; b.frequency.value = 82.6; lp.type = "lowpass"; lp.frequency.value = 220; g.gain.value = 0; lfo.frequency.value = .12; lg.gain.value = 60; lfo.connect(lg); lg.connect(lp.frequency);
+      a.connect(lp); b.connect(lp); lp.connect(g); g.connect(master); a.start(); b.start(); lfo.start(); L.bed = { g, lp }; }
+  }
+  const set = (p, v, tc = .12) => p.setTargetAtTime(v, T(), tc);
+  let alarmT = 0;
+  return {
+    tone, noise, dbg: () => ({ L: !!L, keys: L ? Object.keys(L) : [], state: ac && ac.state, t: ac && ac.currentTime }),
+    // викликається щокадру в грі: близькість найближчої цілі кожного типу -> гучність і висота
+    update(dt, en, hpNow, tension) {
+      if (!ac || !master) return; build(); if (!L) return;
+      const near = {}; let cnt = {};
+      for (const e of en) { const pr = Math.max(0, Math.min(1, e.y / GROUND)); cnt[e.type] = (cnt[e.type] || 0) + 1; if (!near[e.type] || e.y > near[e.type].y) near[e.type] = e; }
+      const pn = (n, e) => { if (n.p) set(n.p.pan, Math.max(-.8, Math.min(.8, (e.x - W / 2) / (W / 2)))); };
+      let e = near.shahed, k = Math.min(3, cnt.shahed || 0);
+      if (e) { const pr = Math.max(0, Math.min(1, e.y / GROUND)), f = 74 + pr * 34 + Math.sin(clock * 3) * 1.5; set(L.shahed.o1.frequency, f); set(L.shahed.o2.frequency, f * 1.012); set(L.shahed.lfo.frequency, 30 + pr * 10); set(L.shahed.g.gain, .008 + .02 * pr + .006 * k); pn(L.shahed, e); } else set(L.shahed.g.gain, 0, .2);
+      e = near.cruise;
+      if (e) { const pr = Math.max(0, Math.min(1, e.y / GROUND)); set(L.cruise.f.frequency, 700 + pr * 1400); set(L.cruise.g.gain, .012 + .05 * pr); pn(L.cruise, e); } else set(L.cruise.g.gain, 0, .15);
+      e = near.jet;
+      if (e) { const pr = Math.max(0, Math.min(1, e.y / GROUND)), f = 300 + pr * 380; set(L.jet.o.frequency, f); set(L.jet.o2.frequency, f * 2.01); set(L.jet.g.gain, .006 + .02 * pr); pn(L.jet, e); } else set(L.jet.g.gain, 0, .15);
+      set(L.bed.g.gain, .018 + .02 * Math.min(1, tension), .5); set(L.bed.lp.frequency, 180 + 160 * Math.min(1, tension), .5);
+      if (hpNow <= 1) { alarmT -= dt; if (alarmT <= 0) { alarmT = 1.1; tone(880, 880, .12, "square", .018); tone(660, 660, .12, "square", .018, .16); } } else alarmT = 0;
+    },
+    silence() { if (!L || !ac) return; for (const k of ["shahed", "cruise", "jet"]) set(L[k].g.gain, 0, .05); set(L.bed.g.gain, 0, .1); },
+    setMuted(m) { muted = m; try { localStorage.setItem("svit_mute", m ? "1" : "0"); } catch (e) {} if (master) master.gain.value = m ? 0 : .6; },
+    shot() { noise(.05, .028, "highpass", 1800, 1800); tone(150 + Math.random() * 30, 60, .06, "sawtooth", .03, 0, 900); },
+    tick() { tone(320, 300, .04, "square", .012); },
+    kill(type) { const big = type === "ballistic" || type === "jet"; noise(.45, big ? .2 : .14, "lowpass", 1400, 300); tone(150, 38, big ? .55 : .35, "sine", big ? .14 : .1); if (big) noise(.25, .06, "highpass", 2500, 2500); },
+    blast() { noise(.6, .26, "lowpass", 1100, 200); tone(120, 32, .6, "sine", .15); noise(.3, .05, "highpass", 3000, 3000, .02); },
+    objHit() { noise(.9, .42, "lowpass", 600, 120); tone(78, 26, 1.0, "sine", .22); noise(.4, .08, "highpass", 2600, 2600, .03); for (let i = 0; i < 4; i++) tone(1400 + Math.random() * 1600, 800, .08, "triangle", .02, .08 + i * .07); },
+    rocketLaunch() { noise(.75, .09, "bandpass", 500, 3200, 0, 1.2); tone(95, 42, .5, "sawtooth", .06, 0, 500); tone(240, 700, .3, "sawtooth", .018, .05, 1800); },
+    warn() { tone(980, 980, .1, "square", .02); tone(740, 740, .1, "square", .02, .14); tone(980, 980, .1, "square", .02, .28); },
+    whistle() { tone(2600, 700, 1.3, "sine", .03); tone(2630, 720, 1.3, "triangle", .012, .01); noise(1.2, .03, "bandpass", 3000, 900, 0, 3); },
+    chime() { tone(660, 660, .22, "triangle", .05); tone(990, 990, .22, "triangle", .045, .09); tone(1320, 1320, .3, "triangle", .04, .18); },
+    ping() { tone(1250, 1250, .16, "sine", .045); tone(1880, 1880, .2, "sine", .02, .06); },
+    overheat() { noise(.5, .06, "highpass", 4000, 2000); tone(120, 70, .3, "square", .035); },
+    tap() { tone(520, 520, .04, "triangle", .03); },
+    start() { tone(180, 420, .45, "sawtooth", .03, 0, 900); noise(.5, .03, "bandpass", 300, 1800, 0, 1); tone(392, 392, .15, "triangle", .04, .35); tone(523, 523, .25, "triangle", .045, .5); },
+    win() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, f, .32, "triangle", .06, i * .13)); [523, 659, 784].forEach(f => tone(f, f, 1.1, "sine", .04, .7)); tone(2093, 2093, .8, "sine", .02, .75); noise(.8, .025, "highpass", 6000, 6000, .72); },
+    lose() { [392, 349, 311, 262].forEach((f, i) => tone(f, f * .985, .5, "sawtooth", .035, i * .26, 800)); tone(110, 30, 1.4, "sine", .12, .9); noise(1.2, .1, "lowpass", 500, 90, .9); },
+  };
+})();
 function haptic(kind) { try { if (tg && tg.HapticFeedback) { kind === "hit" ? tg.HapticFeedback.notificationOccurred("error") : tg.HapticFeedback.impactOccurred(kind === "big" ? "heavy" : "light"); } else if (navigator.vibrate) navigator.vibrate(kind === "hit" ? 140 : kind === "big" ? 40 : 6); } catch (e) {} }
 
 // ======================= ввід =======================
@@ -244,8 +312,8 @@ function startRun(m, idx) {
   fxs = []; enemies = []; bullets = []; parts = []; pops = []; rockets = []; tele = []; casings = []; bonus = null; bonusT = rnd(14, 20); rebT = rnd(26, 36);
   heat = 0; overheat = false; ammo = 1 + save.up.ammo; killsSinceAmmo = 0; rocketCd = 0; fireCd = 0; recoil = 0; ptr.down = false;
   banner = { t: 3.2, text: m === "camp" ? `Рівень ${idx + 1}: ${lv.n}` : "Нескінченна зміна", sub: lv.hint || "Тримайся якомога довше!" };
-  state = "load"; show("load"); audio();
-  preload(CORE.concat(levelKeys(lv))).then(() => { if (state === "load") { cityDark = null; show(null); state = "play"; } });
+  state = "load"; show("load"); audio(); S.silence();
+  preload(CORE.concat(levelKeys(lv))).then(() => { if (state === "load") { cityDark = null; show(null); state = "play"; S.start(); } });
 }
 function curEndlessLevel() { // у нескінченному режимі складність росте
   const k = t / 45;
@@ -262,7 +330,7 @@ function spawn() {
   const cfg = mode === "camp" ? lv : curEndlessLevel();
   const kind = weighted(cfg.mix);
   if (kind === "swarm") { const cx = rnd(70, W - 70), n = 5; for (let i = 0; i < n; i++) { const row = Math.floor((i + 1) / 2), side = i % 2 ? 1 : -1; spawnEnemy("shahed", cx + side * row * 30, -40 - row * 26, .95); } }
-  else if (kind === "ballistic") { const x = rnd(40, W - 40); tele.push({ x, t: 1.1, type: "ballistic" }); }
+  else if (kind === "ballistic") { const x = rnd(40, W - 40); tele.push({ x, t: 1.1, type: "ballistic" }); S.warn(); }
   else spawnEnemy(kind);
 }
 function update(dt) {
@@ -271,7 +339,7 @@ function update(dt) {
   const spawning = mode !== "camp" || t < lv.dur;
   if (spawning) { spawnAcc -= dt * cfg.rate * 1.4; if (spawnAcc <= 0) { spawn(); spawnAcc += rnd(.7, 1.3); } }
   const slow = reb > 0 ? .5 : 1; reb = Math.max(0, reb - dt);
-  for (const q of tele) { q.t -= dt; if (q.t <= 0) { spawnEnemy("ballistic", q.x, -30); } }
+  for (const q of tele) { q.t -= dt; if (q.t <= 0) { spawnEnemy("ballistic", q.x, -30); S.whistle(); } }
   tele = tele.filter(q => q.t > 0);
 
   // бонуси
@@ -286,7 +354,7 @@ function update(dt) {
   fireCd -= dt; recoil = Math.max(0, recoil - dt * 6);
   heat = Math.max(0, heat - dt * (overheat ? .4 : .3)); if (overheat && heat < .3) overheat = false;
   if (ptr.down && fireCd <= 0 && !overheat) {
-    fireCd = 0.15 - save.up.fire * .008; heat += .062 * (1 - save.up.fire * .09); if (heat >= 1) { heat = 1; overheat = true; pop(GUN.x, GUN.y - 70, "🔥 ПЕРЕГРІВ", "#ff9a6a"); beep(120, .3, "square", .05, -50); }
+    fireCd = 0.15 - save.up.fire * .008; heat += .062 * (1 - save.up.fire * .09); if (heat >= 1) { heat = 1; overheat = true; pop(GUN.x, GUN.y - 70, "🔥 ПЕРЕГРІВ", "#ff9a6a"); S.overheat(); }
     const spr = !!rdy("units/mount_base");
     for (const side of [-1, 1]) {
       let bx, by;
@@ -295,7 +363,7 @@ function update(dt) {
       const sp = ang + rnd(-.04, .04);
       bullets.push({ x: bx, y: by, vx: Math.cos(sp) * 700, vy: Math.sin(sp) * 700, life: 1.0, dmg: 1 + save.up.dmg * .2 });
     }
-    recoil = 1; haptic("shot"); beep(150 + Math.random() * 40, .06, "sawtooth", .03, -60); boomSnd(.025, 2400);
+    recoil = 1; haptic("shot"); S.shot();
     if (casings.length < 40) casings.push({ x: GUN.x, y: GUN.y + 4, rot: Math.random() * 6, vx: rnd(-60, -20) * (Math.random() < .5 ? 1 : -1), vy: rnd(-90, -40), life: .7 });
   }
   for (const b of bullets) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; }
@@ -320,7 +388,7 @@ function update(dt) {
     r.x += r.vx * dt; r.y += r.vy * dt; r.life -= dt; smoke(r.x - r.vx * .02, r.y - r.vy * .02, 3, .6);
     let boomNow = r.life <= 0; if (tg2 && Math.hypot(tg2.x - r.x, tg2.y - r.y) < tg2.r + 6) boomNow = true;
     if (boomNow) {
-      r.dead = true; const R = 54 + save.up.rad * 10; boomSnd(.3, 900); haptic("big"); shake = Math.max(shake, 5);
+      r.dead = true; const R = 54 + save.up.rad * 10; S.blast(); haptic("big"); shake = Math.max(shake, 5);
       if (rdy("fx/fx_rocket_blast_8x1")) fx("fx/fx_rocket_blast_8x1", 8, r.x, r.y, R * 2.5, R * 2.5, 18); else parts.push({ x: r.x, y: r.y, ring: R, life: .35, max: .35, col: "#ffcf6a", r: 0, vx: 0, vy: 0, g: 0 }); boom(r.x, r.y, 14, "#ff9a3c", 260, 4);
       for (const e of enemies) if (e.hp > 0 && Math.hypot(e.x - r.x, e.y - r.y) < R + e.r) damage(e, 4.5);
     }
@@ -331,7 +399,7 @@ function update(dt) {
     if (e.hp > 0 && e.y >= GROUND - 4) {
       e.hp = 0; hp -= e.dmg; combo = 0; shake = 16; flash = 1; nearMiss = 0;
       boom(e.x, GROUND, 24, "#ff5a3c", 300, 5); fx("fx/fx_explosion_big_8x1", 8, e.x, GROUND - 14, 128, 128, 18); for (let i = 0; i < 8; i++) smoke(e.x + rnd(-20, 20), GROUND - rnd(0, 20), 8, 1.6);
-      boomSnd(.45, 500); beep(80, .6, "sawtooth", .1, -40); haptic("hit"); pop(SUB.x, GROUND - 70, `💥 −${e.dmg}`, "#ff8a8a");
+      S.objHit(); haptic("hit"); pop(SUB.x, GROUND - 70, `💥 −${e.dmg}`, "#ff8a8a");
       if (hp <= 0) { endRun(false); return; }
     }
   }
@@ -339,7 +407,7 @@ function update(dt) {
   // бонуси: збити кулею
   if (bonus) for (const b of bullets) { if (Math.hypot(b.x - bonus.x, b.y - bonus.y) < 22) {
     if (bonus.kind === "bulb") { hp = Math.min(maxhp, hp + 1); pop(bonus.x, bonus.y, "💡 +1", "#ffe27a"); } else { reb = 6; pop(bonus.x, bonus.y, "📡 РЕБ: вороги повільніші", "#8fd4ff"); }
-    boom(bonus.x, bonus.y, 22, "#ffe27a", 150); beep(660, .25, "triangle", .05, 500); b.life = 0; bonus = null; break; } }
+    boom(bonus.x, bonus.y, 22, "#ffe27a", 150); S.chime(); b.life = 0; bonus = null; break; } }
   for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; p.life -= dt; }
   parts = parts.filter(p => p.life > 0);
   for (const f of fxs) f.t += dt; fxs = fxs.filter(f => f.loop || f.t * f.fps < f.n);
@@ -353,17 +421,17 @@ function update(dt) {
 function damage(e, d) {
   e.hp -= d; e.hit = 1;
   if (e.hp <= 0) {
-    combo++; killed++; if (++killsSinceAmmo >= 16 && ammo < 2 + save.up.ammo) { ammo++; killsSinceAmmo = 0; pop(RB.x + 50, RB.y - 8, "🚀 +1", "#ffd27a"); } const mult = Math.min(5, 1 + Math.floor(combo / 6)); const pts = EN[e.type].pts * mult; score += pts;
+    combo++; killed++; if (++killsSinceAmmo >= 16 && ammo < 2 + save.up.ammo) { ammo++; killsSinceAmmo = 0; pop(RB.x + 50, RB.y - 8, "🚀 +1", "#ffd27a"); S.ping(); } const mult = Math.min(5, 1 + Math.floor(combo / 6)); const pts = EN[e.type].pts * mult; score += pts;
     pop(e.x, e.y - 12, "+" + pts, mult > 1 ? "#7dffb0" : "#fff"); boom(e.x, e.y, 10, "#ff9a3c", 210, 4); fx("fx/fx_explosion_med_6x1", 6, e.x, e.y, 76, 76, 20); for (let i = 0; i < 4; i++) smoke(e.x + rnd(-8, 8), e.y + rnd(-8, 8), 6, 1.1);
-    boomSnd(.16, 1100); beep(170, .18, "sawtooth", .04, -100);
-  } else beep(320, .04, "square", .015);
+    S.kill(e.type);
+  } else S.tick();
 }
 function launchRocket() {
   if (state !== "play" || ammo <= 0 || rocketCd > 0 || enemies.length === 0) return;
   let best = null; for (const e of enemies) if (e.hp > 0 && (!best || e.y > best.y)) best = e;
   if (!best) return;
   // ціль — найнебезпечніша (найближча до об'єкта); для зграї — центр групи
-  ammo--; rocketCd = 1.6; beep(240, .3, "sawtooth", .06, 400); haptic("big");
+  ammo--; rocketCd = 1.6; S.rocketLaunch(); haptic("big");
   const a = Math.atan2(best.y - GUN.y, best.x - GUN.x);
   rockets.push({ x: GUN.x, y: GUN.y - 10, vx: Math.cos(a) * 220, vy: Math.sin(a) * 220, target: best, life: 3 });
 }
@@ -384,6 +452,7 @@ function endRun(win) {
   $("bNext").classList.toggle("hide", !(mode === "camp" && win && lvIdx < LEVELS.length - 1));
   $("ovNote").textContent = "";
   { const mk = mode === "camp" ? (win ? "cheer" : "off") : (score >= save.endless && score > 0 ? "cheer" : "worried"); $("ovMascot").src = AB + "mascot/mascot_" + mk + ".webp"; }
+  S.silence(); (mode === "camp" ? win : (score >= save.endless && score > 0)) ? S.win() : S.lose();
   show("over"); submit(score);
 }
 
@@ -656,8 +725,8 @@ function autoplay() { if (!auto || state !== "play") return; let best = null; fo
 let last = performance.now();
 function loop(now) {
   const dt = Math.min(.05, (now - last) / 1000); last = now; clock = now / 1000;
-  if (state === "play") { autoplay(); update(dt); }
-  else { t += dt; for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; p.life -= dt; } parts = parts.filter(p => p.life > 0); }
+  if (state === "play") { autoplay(); update(dt); S.update(dt, enemies, hp, Math.min(1, enemies.length / 6 + (lv.rate || .5) / 2)); }
+  else { S.silence(); t += dt; for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; p.life -= dt; } parts = parts.filter(p => p.life > 0); }
   render(); requestAnimationFrame(loop);
 }
 
@@ -711,8 +780,11 @@ async function submit(sc) {
     const j = await r.json(); if (j && j.city) $("ovNote").textContent = `Очки додано до рейтингу міста «${j.city}»` + (j.rank ? ` (місце ${j.rank})` : "") + "."; else if (j && j.error) $("ovNote").textContent = "Рейтинг: " + j.error; }
   catch (e) { $("ovNote").textContent = "Не вдалося відправити рахунок у рейтинг."; }
 }
+function sndLabel() { const t = muted ? "🔇 Звук: вимкнено" : "🔊 Звук: увімкнено"; $("bSnd").textContent = t; $("bSnd2").textContent = t; }
+$("bSnd").onclick = $("bSnd2").onclick = () => { audio(); S.setMuted(!muted); sndLabel(); S.tap(); }; sndLabel();
+document.addEventListener("click", e => { if (e.target.closest && e.target.closest("button") && e.target.id !== "bSnd" && e.target.id !== "bSnd2") { audio(); S.tap(); } }, true);
 fillMenu(); show("menu"); $("menuMascot").src = AB + "mascot/mascot_happy.webp"; preload(CORE, 15000);
-window.__game = { get state() { return state; }, get score() { return score; }, get hp() { return hp; }, startRun, set auto(v) { auto = v; }, show, fillLevels, fillShop, fillRate, save, LEVELS, setT(v) { t = v; }, setReb(v) { reb = v; } };
+window.__game = { S, get state() { return state; }, get score() { return score; }, get hp() { return hp; }, startRun, set auto(v) { auto = v; }, show, fillLevels, fillShop, fillRate, save, LEVELS, setT(v) { t = v; }, setReb(v) { reb = v; } };
 requestAnimationFrame(loop);
 })();
 </script>
