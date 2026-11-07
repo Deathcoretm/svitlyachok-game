@@ -1,0 +1,720 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Захисти Світлячок</title>
+<style>
+  html,body{margin:0;height:100%;background:#040a1a;overflow:hidden;font-family:-apple-system,"Segoe UI",Roboto,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none}
+  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  canvas{display:block;background:#0a1633;touch-action:none}
+  .ov{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;background:rgba(2,8,24,.0)}
+  .ov.dim{background:rgba(2,8,24,.55)}
+  .card{pointer-events:auto;width:min(90vw,360px);max-height:92vh;overflow:auto;text-align:center;color:#fff;padding:18px 16px 14px;border-radius:24px;
+    background:linear-gradient(160deg,rgba(22,56,124,.96),rgba(7,22,66,.98));box-shadow:0 10px 40px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.22);border:2px solid rgba(120,190,255,.32)}
+  .card h1{margin:0 0 4px;font-size:25px;line-height:1.15;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+  .card h2{margin:0 0 8px;font-size:20px}
+  .card p{margin:6px 0;font-size:14px;line-height:1.35;color:#cfe3ff}
+  .big{font-size:42px;font-weight:800;color:#ffd84d;text-shadow:0 3px 0 rgba(0,0,0,.4);margin:2px 0}
+  button{display:block;width:100%;margin:9px 0 0;padding:13px;border:0;border-radius:15px;font-size:17px;font-weight:800;color:#2b1a00;font-family:inherit;
+    background:linear-gradient(#ffe27a,#ffb61e);box-shadow:0 4px 0 #b97a00,0 8px 16px rgba(0,0,0,.4);cursor:pointer}
+  button.sec{background:linear-gradient(#7fc4ff,#2f86e6);color:#05204a;box-shadow:0 4px 0 #1b5aa8,0 8px 16px rgba(0,0,0,.4)}
+  button.ghost{background:rgba(255,255,255,.1);color:#cfe3ff;box-shadow:none;border:1px solid rgba(255,255,255,.2);padding:10px;font-size:15px}
+  button:disabled{opacity:.45}
+  button:active{transform:translateY(2px)}
+  .hide{display:none!important}
+  small{display:block;margin-top:8px;color:#8fb2e6;font-size:12px;line-height:1.3}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
+  .lv{padding:10px 0 6px;border-radius:14px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.18);font-weight:800;font-size:20px;cursor:pointer}
+  .lv.lock{opacity:.35;cursor:default}
+  .lv i{display:block;font-style:normal;font-size:11px;letter-spacing:1px;color:#ffd84d;min-height:14px}
+  .row{display:flex;align-items:center;gap:8px;padding:9px 6px;border-bottom:1px solid rgba(255,255,255,.12);text-align:left;font-size:14px}
+  .row b{flex:1}.row span{color:#9fc2f5;font-size:12px}.row em{font-style:normal;font-weight:800;color:#ffd84d}
+  .row button{width:auto;margin:0;padding:7px 11px;font-size:14px;box-shadow:0 3px 0 #b97a00}
+  .tabs{display:flex;gap:8px;margin:6px 0}.tabs button{margin:0;padding:8px;font-size:14px}
+  .coin{color:#ffd84d;font-weight:800}
+  .mascot{display:block;height:104px;margin:-4px auto 2px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.45))}
+  .mascot:not([src]){display:none}
+  .pos{width:22px;text-align:center;font-weight:800;color:#8fb2e6}
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas></div>
+
+<div class="ov dim" id="menu"><div class="card">
+  <img id="menuMascot" class="mascot" alt="">
+  <h1>💡 Захисти Світлячок</h1>
+  <p>Нічна зміна ППО: збивай шахеди й ракети, поки вони не дісталися енергетики. Світло в твоєму місті — у твоїх руках.</p>
+  <div class="coin" id="coins"></div>
+  <button id="bCamp">🎖 Кампанія</button>
+  <button class="sec" id="bEnd">🌙 Нескінченна зміна</button>
+  <button class="sec" id="bShop">🛠 Підсилення</button>
+  <button class="sec" id="bRate">🏆 Рейтинг міст</button>
+  <small id="best"></small>
+</div></div>
+
+<div class="ov dim hide" id="levels"><div class="card">
+  <h2>🎖 Кампанія</h2>
+  <div class="grid" id="lvGrid"></div>
+  <p id="lvInfo"></p>
+  <button class="ghost" data-back>← Назад</button>
+</div></div>
+
+<div class="ov dim hide" id="shop"><div class="card">
+  <h2>🛠 Підсилення</h2>
+  <div class="coin" id="shopCoins"></div>
+  <div id="shopList"></div>
+  <small>Монети дають за рівні й за рекорди. Підсилення діють у всіх режимах.</small>
+  <button class="ghost" data-back>← Назад</button>
+</div></div>
+
+<div class="ov dim hide" id="rate"><div class="card">
+  <h2>🏆 Рейтинг</h2>
+  <div class="tabs"><button class="sec" id="tCity">Міста</button><button class="ghost" id="tUsers">Гравці</button></div>
+  <div id="rateList"></div>
+  <small id="rateNote"></small>
+  <button class="ghost" data-back>← Назад</button>
+</div></div>
+
+<div class="ov dim hide" id="pause"><div class="card">
+  <h2>⏸ Пауза</h2>
+  <button id="bResume">▶ Продовжити</button>
+  <button class="ghost" id="bQuit">Вийти в меню</button>
+</div></div>
+
+<div class="ov dim hide" id="load"><div class="card"><h2>⏳ Завантаження…</h2><p id="loadPct">Готуємо техніку й небо</p></div></div>
+
+<div class="ov dim hide" id="over"><div class="card">
+  <img id="ovMascot" class="mascot" alt="">
+  <h1 id="ovTitle">Підстанцію втрачено</h1>
+  <div id="ovStars" class="big" style="font-size:30px"></div>
+  <div class="big" id="ovScore">0</div>
+  <p id="ovInfo"></p>
+  <button id="bNext">▶ Далі</button>
+  <button class="sec" id="bAgain">🔁 Ще раз</button>
+  <button class="sec" id="bShare">📤 Поділитись</button>
+  <button class="ghost" id="bMenu">Меню</button>
+  <small id="ovNote"></small>
+</div></div>
+
+<script>
+(() => {
+"use strict";
+const W = 360, H = 640, TAU = 6.2832;
+const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+const qs = new URLSearchParams(location.search);
+const tg = window.Telegram && window.Telegram.WebApp;
+if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor("#040a1a"); tg.disableVerticalSwipes && tg.disableVerticalSwipes(); } catch (e) {} }
+const API = qs.get("demo") ? "" : (qs.get("api") || (tg && tg.initData ? location.origin : ""));
+const BOT = qs.get("bot") || "";
+const $ = id => document.getElementById(id);
+const rnd = (a, b) => a + Math.random() * (b - a);
+
+let scale = 1;
+function resize() {
+  scale = Math.min(innerWidth / W, innerHeight / H);
+  const dpr = Math.min(devicePixelRatio || 1, 3);
+  cv.style.width = W * scale + "px"; cv.style.height = H * scale + "px";
+  cv.width = Math.round(W * scale * dpr); cv.height = Math.round(H * scale * dpr);
+  ctx.setTransform(cv.width / W, 0, 0, cv.height / H, 0, 0);
+}
+addEventListener("resize", resize); resize();
+
+// ======================= спрайти =======================
+const AB = /^\/game\/?$/.test(location.pathname) ? "/assets/" : "assets/";   // /game від бота -> абсолютний шлях; Pages/файл -> відносний
+const IMG = {}; let clock = 0; const SOFT = {};
+function soft(k) { // хмара з розмитими краями (ріжемо еліптичною маскою)
+  if (SOFT[k]) return SOFT[k]; const im = rdy(k); if (!im) return null;
+  const w = im.naturalWidth, h = im.naturalHeight, c = document.createElement("canvas"); c.width = w; c.height = h; const g = c.getContext("2d");
+  g.drawImage(im, 0, 0); g.globalCompositeOperation = "destination-in"; g.translate(w / 2, h / 2); g.scale(1, h / w);
+  const gr = g.createRadialGradient(0, 0, w * .12, 0, 0, w * .5); gr.addColorStop(0, "rgba(0,0,0,1)"); gr.addColorStop(.55, "rgba(0,0,0,.85)"); gr.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = gr; g.fillRect(-w / 2, -w / 2, w, w); return (SOFT[k] = c);
+}
+function img(k) { let im = IMG[k]; if (!im) { im = new Image(); im.onload = () => { im._ok = true; }; im.onerror = () => { im._bad = true; }; im.src = AB + k + ".webp"; IMG[k] = im; } return im; }
+const rdy = k => { const im = img(k); return im._ok ? im : null; };
+function frame(k, i, n, x, y, w, h) { const im = rdy(k); if (!im) return false; const fw = im.naturalWidth / n; ctx.drawImage(im, i * fw, 0, fw, im.naturalHeight, x, y, w, h); return true; }
+function preload(keys, ms = 9000) { return new Promise(res => { const t0 = performance.now(); keys.forEach(k => img(k)); const tick = () => { const left = keys.filter(k => !(IMG[k]._ok || IMG[k]._bad)).length; $("loadPct").textContent = `Завантажено ${keys.length - left} з ${keys.length}`; if (!left || performance.now() - t0 > ms) res(); else setTimeout(tick, 50); }; tick(); }); }
+const CORE = ["units/def_pickup", "units/mount_base", "units/mount_head_f0", "units/mount_head_f1", "units/mount_head_f2", "units/def_gunner_flash_1", "units/def_gunner_flash_2", "units/def_gunner_flash_3", "units/def_casing", "units/def_tracer", "units/def_aa_missile_4x1",
+  "units/enemy_shahed_prop_4x1", "units/enemy_shahed_hit", "units/enemy_shahed_light_2x1", "units/enemy_cruise_4x1", "units/enemy_jet_4x1", "units/enemy_ballistic_4x1", "units/warn_ballistic_4x1",
+  "fx/fx_explosion_med_6x1", "fx/fx_explosion_big_8x1", "fx/fx_rocket_blast_8x1", "fx/fx_hit_spark_4x1", "fx/fx_fire_loop_6x1", "fx/fx_shield_dome", "fx/fx_reb_waves_6x1",
+  "ui/ui_life_on", "ui/ui_life_off", "ui/bonus_bulb", "ui/bonus_reb", "ui/ui_btn_yellow_rocket", "mascot/mascot_happy", "mascot/mascot_worried", "mascot/mascot_off", "mascot/mascot_cheer", "mascot/mascot_pulse_4x1",
+  "bg/bg_moon", "bg/bg_cloud_a", "bg/bg_cloud_b", "bg/bg_cloud_c", "bg/bg_searchlight_beam"];
+const OBJN = { sub: "substation", tpp: "tpp", hpp: "hpp", gas: "gas" };
+function levelKeys(L) { const k = []; for (const l of ["sky", "far_city", "near_city", "ground"]) k.push(`bg/bg_${L.sky}_${l}`); for (const st of ["ok", "damaged", "burning"]) k.push(`objects/obj_${OBJN[L.obj]}_${st}`); return k; }
+
+// ======================= збереження =======================
+const SAVE_KEY = "svit_save_v3";
+let save = { coins: 0, up: { fire: 0, dmg: 0, ammo: 0, rad: 0, hp: 0 }, stars: [], best: 0, endless: 0 };
+try { Object.assign(save, JSON.parse(localStorage.getItem(SAVE_KEY) || "{}")); save.up = Object.assign({ fire: 0, dmg: 0, ammo: 0, rad: 0, hp: 0 }, save.up); } catch (e) {}
+const persist = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(save)); } catch (e) {} };
+const UPS = [
+  { k: "fire", n: "🔫 Охолодження ЗУ", d: "повільніше перегрівається, трохи швидше стріляє", base: 70 },
+  { k: "dmg", n: "💥 Бронебійні снаряди", d: "більше шкоди за влучання", base: 90 },
+  { k: "ammo", n: "🚀 Склад ракет ППО", d: "+1 ракета на старті й більший запас", base: 110 },
+  { k: "rad", n: "🎯 Радіус вибуху ракети", d: "ракета вражає більше цілей", base: 80 },
+  { k: "hp", n: "🛡 Міцність об'єкта", d: "+1 життя підстанції", base: 130 },
+];
+const upCost = u => Math.round(u.base * (1 + save.up[u.k] * 1.7));
+const MAXUP = 5;
+
+// ======================= рівні =======================
+// obj: sub|tpp|hpp|gas;  sky: night|dusk|storm|dawn
+const LEVELS = [
+  { n: "Підстанція «Південна»", obj: "sub", sky: "night", dur: 45, rate: 0.55, mix: { shahed: 1 }, hint: "Шахеди повільні, але живучі. Цілься з випередженням!" },
+  { n: "ТЕЦ «Дніпровська»", obj: "tpp", sky: "dusk", dur: 55, rate: 0.7, mix: { shahed: .75, cruise: .25 }, hint: "Нова загроза: крилаті ракети. Швидкі — біжи вогнем!" },
+  { n: "Гідроелектростанція", obj: "hpp", sky: "dawn", dur: 60, rate: 0.8, mix: { shahed: .6, cruise: .2, swarm: .2 }, hint: "Нова загроза: зграї шахедів. Тримай ракету ППО для зграї!" },
+  { n: "Газосховище", obj: "gas", sky: "night", dur: 60, rate: 0.9, mix: { shahed: .45, cruise: .3, ballistic: .25 }, hint: "Нова загроза: балістика. Попередження зверху — реагуй швидко!" },
+  { n: "ТЕЦ: друга хвиля", obj: "tpp", sky: "storm", dur: 65, rate: 1.0, mix: { shahed: .4, cruise: .25, swarm: .15, jet: .2 }, hint: "Нова загроза: реактивні «Герань-3»." },
+  { n: "Підстанція «Центральна»", obj: "sub", sky: "dusk", dur: 70, rate: 1.1, mix: { shahed: .3, cruise: .25, swarm: .15, jet: .15, ballistic: .15 }, hint: "Комбінована атака. Збирай лампочки й РЕБ." },
+  { n: "ГЕС: масована атака", obj: "hpp", sky: "storm", dur: 75, rate: 1.25, mix: { shahed: .25, cruise: .25, swarm: .2, jet: .15, ballistic: .15 }, hint: "Майже без перерв. Не заплющуй очі." },
+  { n: "Нічна зміна: фінал", obj: "gas", sky: "night", dur: 90, rate: 1.4, mix: { shahed: .22, cruise: .25, swarm: .2, jet: .17, ballistic: .16 }, hint: "Найсильніша атака. Світло тримається на тобі." },
+];
+const SKY = {
+  night: ["#040a22", "#0f3270", "#2a7fb8", "#13294a"], dusk: ["#1a1040", "#7a2f6f", "#ff9a5a", "#2a2040"],
+  storm: ["#0b1218", "#233a44", "#4a6068", "#1a2a30"], dawn: ["#10224a", "#5b6fb5", "#ffb48a", "#26324e"],
+};
+
+// ======================= типи ворогів =======================
+const EN = {
+  shahed:   { r: 22, hp: 5.0, sp: 46, pts: 15, name: "Шахед" },
+  cruise:   { r: 16, hp: 4.0, sp: 100, pts: 30, name: "Крилата ракета", acc: .7 },
+  jet:      { r: 17, hp: 6.5, sp: 92, pts: 40, name: "Герань-3", weave: 46 },
+  ballistic:{ r: 12, hp: 2.6, sp: 250, pts: 50, name: "Балістика", dmg: 2 },
+};
+
+// ======================= стан =======================
+const MAXHPBASE = 4;
+let state = "menu", mode = "camp", lvIdx = 0, lv = LEVELS[0];
+let t = 0, score = 0, hp = 5, maxhp = 5, combo = 0, killed = 0, shake = 0, flash = 0, lightning = 0, spawnAcc = 0, reb = 0;
+let fxs = [], enemies = [], bullets = [], parts = [], pops = [], rockets = [], tele = [], bonus = null, casings = [], banner = { t: 0, text: "", sub: "" };
+let killsSinceAmmo = 0, heat = 0, overheat = false, ammo = 0, rocketCd = 0, fireCd = 0, recoil = 0, bonusT = 15, rebT = 30, nearMiss = 0;
+const ptr = { down: false, x: W / 2, y: 220 };
+const SUB = { x: W / 2, y: 548 }, GROUND = 548, OBJ_BASE = 590, WHEEL_Y = 637;
+// зенітка: пікап + база з солдатом + голова зі стволами, що обертається (див. assets/manifest.json)
+const PK = { w: 110, h: 64, bottom: 58.5, bedX: 55, bedY: 31 }, MS = .27, TRUN = [166, 104], BASEPT = [140, 205], BARREL0 = 13 * Math.PI / 180, MUZ = [[278, 67], [281, 93]];
+const PKX = W / 2 - PK.w / 2, PKY = WHEEL_Y - PK.bottom, BX = PKX + PK.bedX, BY = PKY + PK.bedY;
+const GUN = { x: BX + (TRUN[0] - BASEPT[0]) * MS, y: BY + (TRUN[1] - BASEPT[1]) * MS };
+const stars = Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * 330, r: Math.random() * 1.3 + .3, p: Math.random() * 6 }));
+const clouds = Array.from({ length: 5 }, () => ({ x: Math.random() * W, y: rnd(60, 280), w: rnd(90, 170), v: rnd(3, 9) }));
+const city = Array.from({ length: 12 }, (_, i) => ({ x: i * 32 - 8, w: 24 + Math.random() * 14, h: 40 + Math.random() * 110, win: Array.from({ length: 15 }, () => Math.random()) }));
+
+// ======================= звук / вібро =======================
+let ac = null, noiseBuf = null;
+function audio() { try { if (!ac) { ac = new (window.AudioContext || window.webkitAudioContext)(); noiseBuf = ac.createBuffer(1, ac.sampleRate * .6, ac.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; } if (ac.state === "suspended") ac.resume(); } catch (e) {} }
+function beep(f, d, type = "square", vol = .04, slide = 0) {
+  try { if (!ac) return; const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f + slide), ac.currentTime + d);
+    g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + d); o.connect(g); g.connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch (e) {}
+}
+function boomSnd(vol = .18, lp = 700) {
+  try { if (!ac) return; const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain(); s.buffer = noiseBuf; f.type = "lowpass"; f.frequency.value = lp;
+    g.gain.value = vol; g.gain.exponentialRampToValueAtTime(.0001, ac.currentTime + .55); s.connect(f); f.connect(g); g.connect(ac.destination); s.start(); } catch (e) {}
+}
+function haptic(kind) { try { if (tg && tg.HapticFeedback) { kind === "hit" ? tg.HapticFeedback.notificationOccurred("error") : tg.HapticFeedback.impactOccurred(kind === "big" ? "heavy" : "light"); } else if (navigator.vibrate) navigator.vibrate(kind === "hit" ? 140 : kind === "big" ? 40 : 6); } catch (e) {} }
+
+// ======================= ввід =======================
+const RB = { x: W - 112, y: H - 78, w: 104, h: 70 }, PAUSE_BTN = { x: W / 2, y: 22, r: 18 };
+function toGame(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+cv.addEventListener("pointerdown", e => {
+  e.preventDefault(); audio(); if (state !== "play") return;
+  const p = toGame(e);
+  if (Math.hypot(p.x - PAUSE_BTN.x, p.y - PAUSE_BTN.y) < PAUSE_BTN.r + 6) { pause(true); return; }
+  if (p.x > RB.x - 8 && p.x < RB.x + RB.w + 8 && p.y > RB.y - 8 && p.y < RB.y + RB.h + 8) { launchRocket(); return; }
+  ptr.x = p.x; ptr.y = p.y; ptr.down = true; try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+});
+cv.addEventListener("pointermove", e => { if (ptr.down) { e.preventDefault(); const p = toGame(e); ptr.x = p.x; ptr.y = p.y; } });
+["pointerup", "pointercancel"].forEach(n => cv.addEventListener(n, () => { ptr.down = false; }));
+document.addEventListener("touchmove", e => { if (e.target === cv) e.preventDefault(); }, { passive: false });
+addEventListener("keydown", e => { if (e.code === "Space") launchRocket(); });
+
+// ======================= допоміжне =======================
+function rr(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+function glow(x, y, r, rgb, a) { const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${rgb},${a})`); g.addColorStop(1, `rgba(${rgb},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fill(); }
+function boom(x, y, n, col, sp = 160, size = 5) { for (let i = 0; i < n && parts.length < 420; i++) { const a = Math.random() * TAU, s = rnd(30, sp); parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s, life: rnd(.3, .9), max: .9, col, r: rnd(1.5, size), g: 120 }); } }
+function smoke(x, y, r = 4, life = .9) { if (parts.length < 420) parts.push({ x, y, vx: rnd(-8, 8), vy: rnd(-10, 6), life, max: life, col: "rgba(150,155,165,", r, g: -10, sm: 1 }); }
+function fx(k, n, x, y, w, h, fps, loop = false) { if (fxs.length < 60) fxs.push({ k, n, x, y, w, h, fps, loop, t: 0 }); }
+function pop(x, y, txt, col) { pops.push({ x, y, txt, col, life: 1 }); }
+function weighted(mix) { let s = 0; for (const k in mix) s += mix[k]; let r = Math.random() * s; for (const k in mix) { r -= mix[k]; if (r <= 0) return k; } return Object.keys(mix)[0]; }
+
+// ======================= гра =======================
+function startRun(m, idx) {
+  mode = m; lvIdx = idx; lv = m === "camp" ? LEVELS[idx] : { n: "Нескінченна зміна", obj: "sub", sky: "night", dur: 1e9, rate: .55, mix: { shahed: 1 } };
+  t = 0; score = 0; combo = 0; killed = 0; shake = 0; flash = 0; spawnAcc = 0.8; reb = 0; lightning = 0;
+  maxhp = MAXHPBASE + save.up.hp; hp = maxhp;
+  fxs = []; enemies = []; bullets = []; parts = []; pops = []; rockets = []; tele = []; casings = []; bonus = null; bonusT = rnd(14, 20); rebT = rnd(26, 36);
+  heat = 0; overheat = false; ammo = 1 + save.up.ammo; killsSinceAmmo = 0; rocketCd = 0; fireCd = 0; recoil = 0; ptr.down = false;
+  banner = { t: 3.2, text: m === "camp" ? `Рівень ${idx + 1}: ${lv.n}` : "Нескінченна зміна", sub: lv.hint || "Тримайся якомога довше!" };
+  state = "load"; show("load"); audio();
+  preload(CORE.concat(levelKeys(lv))).then(() => { if (state === "load") { cityDark = null; show(null); state = "play"; } });
+}
+function curEndlessLevel() { // у нескінченному режимі складність росте
+  const k = t / 45;
+  return { rate: Math.min(2.2, .55 + k * .22), mix: k < 1 ? { shahed: 1 } : k < 2 ? { shahed: .7, cruise: .3 } : k < 3 ? { shahed: .45, cruise: .25, swarm: .15, ballistic: .15 } : { shahed: .3, cruise: .25, swarm: .15, jet: .15, ballistic: .15 } };
+}
+function spawnEnemy(type, x0, y0, spMul = 1) {
+  const d = EN[type]; const x = x0 ?? rnd(34, W - 34), y = y0 ?? -40;
+  const tx = SUB.x + rnd(-62, 62), ty = GROUND;
+  const a = Math.atan2(ty - y, tx - x), lvSp = 1 + (mode === "camp" ? lvIdx * .06 : Math.min(.9, t / 220));
+  const sp = d.sp * lvSp * spMul;
+  enemies.push({ type, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, hp: d.hp, max: d.hp, r: d.r, ph: Math.random() * 6, hit: 0, sp: sp, dmg: d.dmg || 1, acc: d.acc || 0, weave: d.weave || 0 });
+}
+function spawn() {
+  const cfg = mode === "camp" ? lv : curEndlessLevel();
+  const kind = weighted(cfg.mix);
+  if (kind === "swarm") { const cx = rnd(70, W - 70), n = 5; for (let i = 0; i < n; i++) { const row = Math.floor((i + 1) / 2), side = i % 2 ? 1 : -1; spawnEnemy("shahed", cx + side * row * 30, -40 - row * 26, .95); } }
+  else if (kind === "ballistic") { const x = rnd(40, W - 40); tele.push({ x, t: 1.1, type: "ballistic" }); }
+  else spawnEnemy(kind);
+}
+function update(dt) {
+  t += dt; banner.t = Math.max(0, banner.t - dt);
+  const cfg = mode === "camp" ? lv : curEndlessLevel();
+  const spawning = mode !== "camp" || t < lv.dur;
+  if (spawning) { spawnAcc -= dt * cfg.rate * 1.4; if (spawnAcc <= 0) { spawn(); spawnAcc += rnd(.7, 1.3); } }
+  const slow = reb > 0 ? .5 : 1; reb = Math.max(0, reb - dt);
+  for (const q of tele) { q.t -= dt; if (q.t <= 0) { spawnEnemy("ballistic", q.x, -30); } }
+  tele = tele.filter(q => q.t > 0);
+
+  // бонуси
+  bonusT -= dt; rebT -= dt;
+  if (!bonus && bonusT <= 0 && hp < maxhp) { bonus = { kind: "bulb", x: rnd(40, W - 40), y: -20, ph: 0 }; bonusT = rnd(22, 32); }
+  else if (!bonus && rebT <= 0) { bonus = { kind: "reb", x: rnd(40, W - 40), y: -20, ph: 0 }; rebT = rnd(34, 46); }
+  if (bonus) { bonus.y += 52 * dt; bonus.ph += dt * 5; if (bonus.y > H - 60) bonus = null; }
+
+  // стрільба ЗУ
+  const aim = Math.atan2(ptr.y - GUN.y, ptr.x - GUN.x);
+  const ang = Math.max(-Math.PI + .12, Math.min(-.12, aim));
+  fireCd -= dt; recoil = Math.max(0, recoil - dt * 6);
+  heat = Math.max(0, heat - dt * (overheat ? .4 : .3)); if (overheat && heat < .3) overheat = false;
+  if (ptr.down && fireCd <= 0 && !overheat) {
+    fireCd = 0.15 - save.up.fire * .008; heat += .062 * (1 - save.up.fire * .09); if (heat >= 1) { heat = 1; overheat = true; pop(GUN.x, GUN.y - 70, "🔥 ПЕРЕГРІВ", "#ff9a6a"); beep(120, .3, "square", .05, -50); }
+    const spr = !!rdy("units/mount_base");
+    for (const side of [-1, 1]) {
+      let bx, by;
+      if (spr) { [bx, by] = gunPoint(MUZ[side < 0 ? 0 : 1][0], MUZ[side < 0 ? 0 : 1][1], ang, true); }
+      else { const ox = Math.cos(ang + Math.PI / 2) * 4.5 * side, oy = Math.sin(ang + Math.PI / 2) * 4.5 * side; bx = GUN.x + ox + Math.cos(ang) * 44; by = GUN.y - 14 + oy + Math.sin(ang) * 44; }
+      const sp = ang + rnd(-.04, .04);
+      bullets.push({ x: bx, y: by, vx: Math.cos(sp) * 700, vy: Math.sin(sp) * 700, life: 1.0, dmg: 1 + save.up.dmg * .2 });
+    }
+    recoil = 1; haptic("shot"); beep(150 + Math.random() * 40, .06, "sawtooth", .03, -60); boomSnd(.025, 2400);
+    if (casings.length < 40) casings.push({ x: GUN.x, y: GUN.y + 4, rot: Math.random() * 6, vx: rnd(-60, -20) * (Math.random() < .5 ? 1 : -1), vy: rnd(-90, -40), life: .7 });
+  }
+  for (const b of bullets) { b.x += b.vx * dt; b.y += b.vy * dt; b.life -= dt; }
+  bullets = bullets.filter(b => b.life > 0 && b.x > -20 && b.x < W + 20 && b.y > -40 && b.y < H);
+
+  // вороги
+  for (const e of enemies) {
+    const ac = 1 + e.acc * Math.max(0, e.y) / GROUND; e.x += e.vx * dt * slow * ac; e.y += e.vy * dt * slow * ac; if (e.weave) e.x += Math.cos(e.ph * .22) * e.weave * dt * slow; e.ph += dt * 10; e.hit = Math.max(0, e.hit - dt * 6);
+    if (e.type === "shahed") { e.x += Math.sin(e.ph * .25) * 6 * dt; if (Math.random() < .25) smoke(e.x - e.vx * .09, e.y - e.vy * .09, 2.2, .5); }
+    else if (e.type !== "shahed") { if (Math.random() < .8) smoke(e.x - e.vx * .08, e.y - e.vy * .08, e.type === "ballistic" ? 4.5 : 3, e.type === "ballistic" ? 1.2 : .8); }
+  }
+  // попадання куль
+  for (const b of bullets) for (const e of enemies) {
+    if (e.hp <= 0 || b.life <= 0) continue;
+    const dx = b.x - e.x, dy = b.y - e.y;
+    if (dx * dx + dy * dy < (e.r + 2) * (e.r + 2)) { b.life = 0; damage(e, b.dmg); boom(b.x, b.y, 2, "#ffd84d", 90, 2.5); fx("fx/fx_hit_spark_4x1", 4, b.x, b.y, 22, 22, 24); }
+  }
+  // ракети ППО
+  for (const r of rockets) {
+    const tg2 = r.target && r.target.hp > 0 ? r.target : null;
+    if (tg2) { const a = Math.atan2(tg2.y - r.y, tg2.x - r.x); r.vx += (Math.cos(a) * 420 - r.vx) * Math.min(1, dt * 4); r.vy += (Math.sin(a) * 420 - r.vy) * Math.min(1, dt * 4); }
+    r.x += r.vx * dt; r.y += r.vy * dt; r.life -= dt; smoke(r.x - r.vx * .02, r.y - r.vy * .02, 3, .6);
+    let boomNow = r.life <= 0; if (tg2 && Math.hypot(tg2.x - r.x, tg2.y - r.y) < tg2.r + 6) boomNow = true;
+    if (boomNow) {
+      r.dead = true; const R = 54 + save.up.rad * 10; boomSnd(.3, 900); haptic("big"); shake = Math.max(shake, 5);
+      if (rdy("fx/fx_rocket_blast_8x1")) fx("fx/fx_rocket_blast_8x1", 8, r.x, r.y, R * 2.5, R * 2.5, 18); else parts.push({ x: r.x, y: r.y, ring: R, life: .35, max: .35, col: "#ffcf6a", r: 0, vx: 0, vy: 0, g: 0 }); boom(r.x, r.y, 14, "#ff9a3c", 260, 4);
+      for (const e of enemies) if (e.hp > 0 && Math.hypot(e.x - r.x, e.y - r.y) < R + e.r) damage(e, 4.5);
+    }
+  }
+  rockets = rockets.filter(r => !r.dead);
+  // влучання по об'єкту
+  for (const e of enemies) {
+    if (e.hp > 0 && e.y >= GROUND - 4) {
+      e.hp = 0; hp -= e.dmg; combo = 0; shake = 16; flash = 1; nearMiss = 0;
+      boom(e.x, GROUND, 24, "#ff5a3c", 300, 5); fx("fx/fx_explosion_big_8x1", 8, e.x, GROUND - 14, 128, 128, 18); for (let i = 0; i < 8; i++) smoke(e.x + rnd(-20, 20), GROUND - rnd(0, 20), 8, 1.6);
+      boomSnd(.45, 500); beep(80, .6, "sawtooth", .1, -40); haptic("hit"); pop(SUB.x, GROUND - 70, `💥 −${e.dmg}`, "#ff8a8a");
+      if (hp <= 0) { endRun(false); return; }
+    }
+  }
+  enemies = enemies.filter(e => e.hp > 0);
+  // бонуси: збити кулею
+  if (bonus) for (const b of bullets) { if (Math.hypot(b.x - bonus.x, b.y - bonus.y) < 22) {
+    if (bonus.kind === "bulb") { hp = Math.min(maxhp, hp + 1); pop(bonus.x, bonus.y, "💡 +1", "#ffe27a"); } else { reb = 6; pop(bonus.x, bonus.y, "📡 РЕБ: вороги повільніші", "#8fd4ff"); }
+    boom(bonus.x, bonus.y, 22, "#ffe27a", 150); beep(660, .25, "triangle", .05, 500); b.life = 0; bonus = null; break; } }
+  for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; p.life -= dt; }
+  parts = parts.filter(p => p.life > 0);
+  for (const f of fxs) f.t += dt; fxs = fxs.filter(f => f.loop || f.t * f.fps < f.n);
+  for (const c of casings) { c.rot = (c.rot || 0) + dt * 12; c.x += c.vx * dt; c.y += c.vy * dt; c.vy += 500 * dt; c.life -= dt; } casings = casings.filter(c => c.life > 0);
+  for (const p of pops) { p.y -= 28 * dt; p.life -= dt; } pops = pops.filter(p => p.life > 0);
+  shake = Math.max(0, shake - dt * 32); flash = Math.max(0, flash - dt * 2.4); rocketCd = Math.max(0, rocketCd - dt);
+  if (lv.sky === "storm") { if (Math.random() < dt * .25) lightning = 1; lightning = Math.max(0, lightning - dt * 3); }
+  // перемога
+  if (mode === "camp" && t >= lv.dur && enemies.length === 0 && tele.length === 0) endRun(true);
+}
+function damage(e, d) {
+  e.hp -= d; e.hit = 1;
+  if (e.hp <= 0) {
+    combo++; killed++; if (++killsSinceAmmo >= 16 && ammo < 2 + save.up.ammo) { ammo++; killsSinceAmmo = 0; pop(RB.x + 50, RB.y - 8, "🚀 +1", "#ffd27a"); } const mult = Math.min(5, 1 + Math.floor(combo / 6)); const pts = EN[e.type].pts * mult; score += pts;
+    pop(e.x, e.y - 12, "+" + pts, mult > 1 ? "#7dffb0" : "#fff"); boom(e.x, e.y, 10, "#ff9a3c", 210, 4); fx("fx/fx_explosion_med_6x1", 6, e.x, e.y, 76, 76, 20); for (let i = 0; i < 4; i++) smoke(e.x + rnd(-8, 8), e.y + rnd(-8, 8), 6, 1.1);
+    boomSnd(.16, 1100); beep(170, .18, "sawtooth", .04, -100);
+  } else beep(320, .04, "square", .015);
+}
+function launchRocket() {
+  if (state !== "play" || ammo <= 0 || rocketCd > 0 || enemies.length === 0) return;
+  let best = null; for (const e of enemies) if (e.hp > 0 && (!best || e.y > best.y)) best = e;
+  if (!best) return;
+  // ціль — найнебезпечніша (найближча до об'єкта); для зграї — центр групи
+  ammo--; rocketCd = 1.6; beep(240, .3, "sawtooth", .06, 400); haptic("big");
+  const a = Math.atan2(best.y - GUN.y, best.x - GUN.x);
+  rockets.push({ x: GUN.x, y: GUN.y - 10, vx: Math.cos(a) * 220, vy: Math.sin(a) * 220, target: best, life: 3 });
+}
+function endRun(win) {
+  state = "over"; ptr.down = false;
+  let stars = 0; if (mode === "camp" && win) stars = hp >= maxhp * .8 ? 3 : hp >= maxhp * .4 ? 2 : 1;
+  const oldStars = mode === "camp" ? (save.stars[lvIdx] || 0) : 0;   // бонуси лише за перший прохід / новий рекорд зірок
+  const coins = Math.floor(score / 100) + (win && !oldStars ? 12 : 0) + Math.max(0, stars - oldStars) * 4;
+  save.coins += coins;
+  if (mode === "camp") { if (win) { save.stars[lvIdx] = Math.max(save.stars[lvIdx] || 0, stars); } }
+  else if (score > save.endless) save.endless = score;
+  if (score > save.best) save.best = score;
+  persist();
+  $("ovTitle").textContent = mode === "camp" ? (win ? "✅ Об'єкт захищено!" : "💥 Об'єкт втрачено") : (score >= save.endless && score > 0 ? "🏆 Новий рекорд зміни!" : "Зміну завершено");
+  $("ovStars").textContent = mode === "camp" && win ? "★".repeat(stars) + "☆".repeat(3 - stars) : "";
+  $("ovScore").textContent = score;
+  $("ovInfo").innerHTML = `Збито цілей: ${killed} · Монети: <span class="coin">+${coins}</span>`;
+  $("bNext").classList.toggle("hide", !(mode === "camp" && win && lvIdx < LEVELS.length - 1));
+  $("ovNote").textContent = "";
+  { const mk = mode === "camp" ? (win ? "cheer" : "off") : (score >= save.endless && score > 0 ? "cheer" : "worried"); $("ovMascot").src = AB + "mascot/mascot_" + mk + ".webp"; }
+  show("over"); submit(score);
+}
+
+// ======================= малювання =======================
+let cityDark = null;
+function skySprites() {
+  const L = ["sky", "far_city", "near_city", "ground"].map(l => rdy(`bg/bg_${lv.sky}_${l}`)); if (L.some(x => !x)) return false;
+  ctx.drawImage(L[0], 0, 0, W, H);
+  if (lv.sky !== "storm") { const m = rdy("bg/bg_moon"); if (m) { ctx.globalAlpha = lv.sky === "dawn" ? .55 : .95; ctx.drawImage(m, 236, 24, 128, 128); ctx.globalAlpha = 1; } }
+  const cl = ["a", "b", "c"].map(c => soft("bg/bg_cloud_" + c));
+  clouds.forEach((c2, i) => { c2.x += c2.v * .016; if (c2.x - 150 > W) c2.x = -150; const im = cl[i % 3]; if (im) { ctx.globalAlpha = lv.sky === "storm" ? .6 : .22; ctx.drawImage(im, c2.x - 150, c2.y - 50, 300, 100); ctx.globalAlpha = 1; } });
+  if (lightning > 0) { ctx.fillStyle = `rgba(200,220,255,${lightning * .35})`; ctx.fillRect(0, 0, W, H); }
+  ctx.drawImage(L[1], 0, 0, W, H); ctx.drawImage(L[2], 0, 0, W, H);
+  const lit = hp / maxhp;
+  if (lit < 1) { // місто згасає при втратах: темна копія силуету міста поверх
+    if (!cityDark) { cityDark = document.createElement("canvas"); cityDark.width = 360; cityDark.height = 640; const c2 = cityDark.getContext("2d"); c2.drawImage(L[2], 0, 0, 360, 640); c2.globalCompositeOperation = "source-atop"; c2.fillStyle = "rgba(4,10,28,.82)"; c2.fillRect(0, 0, 360, 640); }
+    ctx.globalAlpha = 1 - lit; ctx.drawImage(cityDark, 0, 0); ctx.globalAlpha = 1;
+  }
+  ctx.drawImage(L[3], 0, 0, W, H);
+  const bm = rdy("bg/bg_searchlight_beam");
+  if (bm && lv.sky !== "dawn") for (let i = 0; i < 2; i++) { ctx.save(); ctx.translate(i ? 304 : 56, 586); ctx.rotate(Math.sin(clock * .6 + i * 2) * .5 + (i ? -.12 : .12)); ctx.globalAlpha = .28; ctx.globalCompositeOperation = "lighter"; ctx.drawImage(bm, -30, -480, 60, 480); ctx.restore(); }
+  return true;
+}
+function drawSky() {
+  if (skySprites()) return;
+  const c = SKY[lv.sky] || SKY.night, g = ctx.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, c[0]); g.addColorStop(.55, c[1]); g.addColorStop(.86, c[2]); g.addColorStop(1, c[3]); ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  if (lv.sky === "night" || lv.sky === "dawn") for (const s of stars) { ctx.globalAlpha = (lv.sky === "dawn" ? .35 : .9) * (.5 + .5 * Math.sin(t * 2 + s.p)); ctx.fillStyle = "#fff"; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, TAU); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  if (lv.sky !== "storm") { glow(296, 92, 80, "255,240,200", .3); ctx.fillStyle = lv.sky === "dusk" ? "#ffd9a8" : "#fff4d0"; ctx.beginPath(); ctx.arc(296, 92, 19, 0, TAU); ctx.fill(); }
+  ctx.fillStyle = lv.sky === "storm" ? "rgba(70,86,94,.7)" : "rgba(130,150,200,.18)";
+  for (const c2 of clouds) { c2.x += c2.v * .016; if (c2.x - c2.w > W) c2.x = -c2.w; ctx.beginPath(); ctx.ellipse(c2.x, c2.y, c2.w, 16, 0, 0, TAU); ctx.ellipse(c2.x + c2.w * .4, c2.y - 8, c2.w * .5, 14, 0, 0, TAU); ctx.fill(); }
+  if (lightning > 0) { ctx.fillStyle = `rgba(200,220,255,${lightning * .35})`; ctx.fillRect(0, 0, W, H); }
+  // прожектори
+  if (lv.sky !== "dawn") for (let i = 0; i < 2; i++) { const bx = i ? 300 : 60, a = -Math.PI / 2 + Math.sin(t * .6 + i * 2) * .5; ctx.fillStyle = "rgba(200,225,255,.07)"; ctx.beginPath(); ctx.moveTo(bx - 4, GROUND); ctx.lineTo(bx + Math.cos(a - .05) * 560, GROUND + Math.sin(a - .05) * 560); ctx.lineTo(bx + Math.cos(a + .05) * 560, GROUND + Math.sin(a + .05) * 560); ctx.lineTo(bx + 4, GROUND); ctx.fill(); }
+  // місто
+  const lit = hp / maxhp;
+  for (const b of city) {
+    const y0 = GROUND - b.h; ctx.fillStyle = "rgba(8,18,40,.95)"; rr(b.x, y0, b.w, b.h + 20, 3); ctx.fill();
+    b.win.forEach((r, i) => { const cx = b.x + 4 + (i % 3) * 8, cy = y0 + 7 + Math.floor(i / 3) * 12; if (cy > GROUND - 6) return; const on = r < lit; ctx.fillStyle = on ? "#ffd86b" : "#0f2146"; ctx.fillRect(cx, cy, 5, 7); if (on) { ctx.globalAlpha = .2; ctx.fillStyle = "#ffcf5a"; ctx.fillRect(cx - 2, cy - 2, 9, 11); ctx.globalAlpha = 1; } });
+  }
+  const gg = ctx.createLinearGradient(0, GROUND, 0, H); gg.addColorStop(0, "#1b3a60"); gg.addColorStop(1, "#08142c"); ctx.fillStyle = gg; ctx.fillRect(0, GROUND, W, H - GROUND);
+  // дорога
+  ctx.fillStyle = "#0d1c38"; ctx.fillRect(0, 566, W, 74); ctx.fillStyle = "rgba(255,255,255,.12)"; for (let x = 0; x < W; x += 36) ctx.fillRect(x, 602, 18, 2);
+}
+const OBJ_BOT = { substation: 210, tpp: 248, hpp: 191, gas: 229 }, OBJ_TOP = { substation: 33, tpp: 16, hpp: 50, gas: 57 };
+function objSprite() {
+  const nm = OBJN[lv.obj], lit = hp / maxhp, st = lit >= .6 ? "ok" : lit >= .3 ? "damaged" : "burning";
+  const im = rdy(`objects/obj_${nm}_${st}`); if (!im) return false;
+  const sc = .5, w = im.naturalWidth * sc, h = im.naturalHeight * sc, x0 = SUB.x - w / 2, y0 = OBJ_BASE - OBJ_BOT[nm] * sc, topY = y0 + OBJ_TOP[nm] * sc;
+  glow(SUB.x, OBJ_BASE - 40, 140, "255,210,90", .16 * (.2 + lit));
+  ctx.drawImage(im, x0, y0, w, h);
+  if (st !== "ok") {
+    const n = st === "burning" ? 3 : 1;
+    for (let i = 0; i < n; i++) frame("fx/fx_fire_loop_6x1", (Math.floor(clock * 12) + i * 2) % 6, 6, SUB.x + (i - (n - 1) / 2) * 62 - 20, OBJ_BASE - 84 - (i % 2) * 14, 40, 56);
+    if (Math.random() < (st === "burning" ? .5 : .25)) smoke(SUB.x + rnd(-60, 60), topY + rnd(10, 40), 7, 1.6);
+  }
+  // талісман-лампочка над об'єктом
+  const mk = lit >= .6 ? "happy" : lit >= .3 ? "worried" : "off", mw = 44, mh = 55, my = topY - 2 + Math.sin(clock * 2.2) * 2;
+  if (mk === "happy") { if (!frame("mascot/mascot_pulse_4x1", Math.floor(clock * 6) % 4, 4, SUB.x - mw / 2, my - mh, mw, mh)) { const m = rdy("mascot/mascot_happy"); if (m) ctx.drawImage(m, SUB.x - mw / 2, my - mh, mw, mh); } }
+  else { const m = rdy("mascot/mascot_" + mk); if (m) ctx.drawImage(m, SUB.x - mw / 2, my - mh, mw, mh); }
+  return true;
+}
+function drawObject() {
+  if (objSprite()) return;
+  const lit = hp / maxhp, cx = SUB.x; ctx.lineJoin = "round";
+  glow(cx, GROUND - 14, 120 * (.3 + lit), "255,210,90", .35 * (.2 + lit));
+  const steel = (x, y, w, h, r = 4) => { const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, "#5a6f90"); g.addColorStop(.45, "#aebfdc"); g.addColorStop(1, "#47597a"); ctx.fillStyle = g; ctx.strokeStyle = "#0b1a38"; ctx.lineWidth = 2; rr(x, y, w, h, r); ctx.fill(); ctx.stroke(); };
+  if (obj() === "sub") {
+    ctx.strokeStyle = "#0a1428"; ctx.lineWidth = 3;
+    for (const dx of [-128, 128]) { ctx.beginPath(); ctx.moveTo(cx + dx, GROUND); ctx.lineTo(cx + dx, 452); ctx.moveTo(cx + dx - 16, 464); ctx.lineTo(cx + dx + 16, 464); ctx.moveTo(cx + dx - 11, 480); ctx.lineTo(cx + dx + 11, 480); ctx.stroke(); }
+    ctx.lineWidth = 1.4; ctx.strokeStyle = "#22345a"; ctx.beginPath(); ctx.moveTo(cx - 144, 464); ctx.quadraticCurveTo(cx - 70, 504, cx - 40, 488); ctx.moveTo(cx + 144, 464); ctx.quadraticCurveTo(cx + 70, 504, cx + 40, 488); ctx.stroke();
+    steel(cx - 76, 492, 152, 36, 8);
+    for (const dx of [-46, -8, 30]) { steel(cx + dx, 468, 24, 40, 9); ctx.fillStyle = "#1f3a6b"; for (let k = 0; k < 4; k++) ctx.fillRect(cx + dx + 3, 474 + k * 8, 18, 3); ctx.fillStyle = "#d6c36b"; ctx.fillRect(cx + dx + 9, 460, 6, 9); }
+  } else if (obj() === "tpp") {
+    steel(cx - 90, 470, 120, 56, 3); ctx.fillStyle = "#12264a"; for (let i = 0; i < 6; i++) { ctx.fillStyle = i / 6 < lit ? "#ffd86b" : "#10234a"; ctx.fillRect(cx - 80 + i * 18, 482, 10, 14); }
+    for (const dx of [-60, 6]) { const g = ctx.createLinearGradient(cx + dx, 0, cx + dx + 20, 0); g.addColorStop(0, "#8d4a3a"); g.addColorStop(.5, "#e0b9a8"); g.addColorStop(1, "#6e3a2e"); ctx.fillStyle = g; ctx.strokeStyle = "#0b1a38"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx + dx, 470); ctx.lineTo(cx + dx + 4, 400); ctx.lineTo(cx + dx + 16, 400); ctx.lineTo(cx + dx + 20, 470); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#e5e5e5"; ctx.fillRect(cx + dx + 3, 412, 14, 6); if (lit > .3 && Math.random() < .4) smoke(cx + dx + 10, 398, 7, 1.5); }
+    ctx.fillStyle = "#6b7e9e"; ctx.strokeStyle = "#0b1a38"; ctx.beginPath(); ctx.moveTo(cx + 44, GROUND); ctx.quadraticCurveTo(cx + 54, 490, cx + 50, 452); ctx.lineTo(cx + 92, 452); ctx.quadraticCurveTo(cx + 88, 490, cx + 98, GROUND); ctx.closePath(); ctx.fill(); ctx.stroke();
+  } else if (obj() === "hpp") {
+    const g = ctx.createLinearGradient(0, 440, 0, GROUND); g.addColorStop(0, "#8a9bb8"); g.addColorStop(1, "#4a5d80"); ctx.fillStyle = g; ctx.strokeStyle = "#0b1a38"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx - 128, 452); ctx.lineTo(cx + 128, 452); ctx.lineTo(cx + 140, GROUND); ctx.lineTo(cx - 140, GROUND); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,.18)"; for (let i = 1; i < 6; i++) { ctx.beginPath(); ctx.moveTo(cx - 128 + i * 43, 452); ctx.lineTo(cx - 140 + i * 47, GROUND); ctx.stroke(); }
+    steel(cx - 40, 470, 80, 40, 6); for (let i = 0; i < 4; i++) { ctx.fillStyle = i / 4 < lit ? "#ffd86b" : "#10234a"; ctx.fillRect(cx - 32 + i * 18, 484, 11, 14); }
+    ctx.fillStyle = "rgba(90,170,255,.35)"; ctx.fillRect(cx - 128, 448, 256, 6);
+  } else {
+    for (const [dx, r] of [[-70, 28], [-8, 34], [58, 28]]) { const g = ctx.createRadialGradient(cx + dx - r * .3, GROUND - r - 22 - r * .3, 3, cx + dx, GROUND - r - 20, r); g.addColorStop(0, "#f2f6ff"); g.addColorStop(1, "#6f86b3"); ctx.fillStyle = g; ctx.strokeStyle = "#0b1a38"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx + dx, GROUND - r - 20, r, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#47597a"; ctx.fillRect(cx + dx - 3, GROUND - 22, 6, 22); }
+    ctx.strokeStyle = "#47597a"; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(cx - 100, GROUND - 6); ctx.lineTo(cx + 100, GROUND - 6); ctx.stroke();
+    ctx.strokeStyle = "#0b1a38"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(cx + 108, GROUND); ctx.lineTo(cx + 108, 470); ctx.stroke(); glow(cx + 108, 464, 30, "255,150,40", .8 * (.4 + Math.sin(t * 12) * .2)); ctx.fillStyle = "#ffb43a"; ctx.beginPath(); ctx.ellipse(cx + 108, 464, 5, 9 + Math.sin(t * 14) * 2, 0, 0, TAU); ctx.fill();
+  }
+  // лампочка-талісман
+  const bx = cx, by = 438 + (obj() === "tpp" ? 10 : 0), on = lit;
+  glow(bx, by, 34, "255,225,110", .5 * on + .06);
+  const bg = ctx.createRadialGradient(bx - 4, by - 5, 2, bx, by, 14); bg.addColorStop(0, "#fffbe6"); bg.addColorStop(1, on > .3 ? "#ffcf3a" : "#7a7f99");
+  ctx.fillStyle = bg; ctx.strokeStyle = "#0e2a5c"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(bx, by, 13, 0, TAU); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#cfd8ea"; rr(bx - 6, by + 10, 12, 7, 3); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#2b1a00"; ctx.beginPath(); ctx.arc(bx - 4.5, by - 1, 1.6, 0, TAU); ctx.arc(bx + 4.5, by - 1, 1.6, 0, TAU); ctx.fill();
+  ctx.strokeStyle = "#2b1a00"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(bx, by + 3, 4, on > .3 ? .15 : 3.3, on > .3 ? 2.99 : 6.1); ctx.stroke();
+}
+const obj = () => lv.obj;
+
+function aimAng() { const a = Math.atan2(ptr.y - GUN.y, ptr.x - GUN.x); return Math.max(-Math.PI + .12, Math.min(-.12, a)); }
+function gunPoint(u, v, ang, rot) {            // піксель спрайта зенітки -> координати світу
+  const flip = Math.cos(ang) < 0, a = flip ? -Math.PI - ang : ang;
+  let du = u - TRUN[0], dv = v - TRUN[1];
+  if (rot) { const r = a + BARREL0, c = Math.cos(r), s = Math.sin(r); const x = du * c - dv * s, y = du * s + dv * c; du = x; dv = y; }
+  let X = (TRUN[0] - BASEPT[0] + du) * MS; const Y = (TRUN[1] - BASEPT[1] + dv) * MS; if (flip) X = -X;
+  return [BX + X, BY + Y];
+}
+function gunSprite() {
+  const pk = rdy("units/def_pickup"), base = rdy("units/mount_base"), heads = [0, 1, 2].map(i => rdy("units/mount_head_f" + i));
+  if (!pk || !base || heads.some(x => !x)) return false;
+  const ang = aimAng(), flip = Math.cos(ang) < 0, a = flip ? -Math.PI - ang : ang;
+  ctx.drawImage(pk, PKX, PKY, PK.w, PK.h);
+  const head = recoil > .66 ? heads[1] : recoil > .2 ? heads[2] : heads[0];
+  ctx.save(); ctx.translate(BX, BY); if (flip) ctx.scale(-1, 1);
+  ctx.drawImage(base, -BASEPT[0] * MS, -BASEPT[1] * MS, base.naturalWidth * MS, base.naturalHeight * MS);
+  ctx.save(); ctx.translate((TRUN[0] - BASEPT[0]) * MS, (TRUN[1] - BASEPT[1]) * MS); ctx.rotate(a + BARREL0);
+  ctx.drawImage(head, -TRUN[0] * MS, -TRUN[1] * MS, head.naturalWidth * MS, head.naturalHeight * MS); ctx.restore();
+  ctx.restore();
+  if (recoil > .55) for (let i = 0; i < 2; i++) { const [mx, my] = gunPoint(MUZ[i][0], MUZ[i][1], ang, true), fl = rdy("units/def_gunner_flash_" + (1 + ((Math.floor(clock * 30) + i) % 3))); if (fl) { ctx.save(); ctx.translate(mx, my); ctx.rotate(ang); ctx.globalCompositeOperation = "lighter"; ctx.drawImage(fl, -1.5, -20, 40, 40); ctx.restore(); } }
+  const cs = rdy("units/def_casing"); if (cs) for (const c of casings) { ctx.save(); ctx.globalAlpha = Math.max(0, c.life / .7); ctx.translate(c.x, c.y); ctx.rotate(c.rot || 0); ctx.drawImage(cs, -3, -5, 6, 10); ctx.restore(); }
+  return true;
+}
+function drawGun() {
+  if (gunSprite()) return;
+  const aim = Math.atan2(ptr.y - GUN.y, ptr.x - GUN.x), ang = Math.max(-Math.PI + .12, Math.min(-.12, aim));
+  const px = GUN.x, py = GUN.y;
+  ctx.lineJoin = "round"; ctx.strokeStyle = "#0a1428"; ctx.lineWidth = 2.5;
+  // причіп-платформа
+  const pg = ctx.createLinearGradient(0, py - 6, 0, py + 22); pg.addColorStop(0, "#6b7a4a"); pg.addColorStop(1, "#3c4630"); ctx.fillStyle = pg; rr(px - 44, py - 6, 88, 22, 5); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.18)"; ctx.fillRect(px - 40, py - 3, 80, 3);
+  for (const dx of [-30, 30]) { ctx.fillStyle = "#15202e"; ctx.beginPath(); ctx.arc(px + dx, py + 18, 11, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#6e7b8d"; ctx.beginPath(); ctx.arc(px + dx, py + 18, 4.5, 0, TAU); ctx.fill(); }
+  // опора
+  ctx.fillStyle = "#4a5636"; rr(px - 13, py - 24, 26, 20, 4); ctx.fill(); ctx.stroke();
+  // ствол з відкатом
+  ctx.save(); ctx.translate(px, py - 20); ctx.rotate(ang);
+  const rc = recoil * 4;
+  for (const s of [-4.5, 4.5]) {
+    const bg2 = ctx.createLinearGradient(0, s - 3.5, 0, s + 3.5); bg2.addColorStop(0, "#9aa7bd"); bg2.addColorStop(.5, "#e4ebf7"); bg2.addColorStop(1, "#4d5a73"); ctx.fillStyle = bg2;
+    rr(6 - rc, s - 3, 42, 6, 2); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#2a3550"; rr(38 - rc, s - 4, 9, 8, 2); ctx.fill(); ctx.stroke();
+    if (recoil > .6) { glow(52 - rc, s, 16, "255,220,120", .9 * recoil); ctx.fillStyle = "rgba(255,235,160,.95)"; ctx.beginPath(); ctx.moveTo(48 - rc, s - 3); ctx.lineTo(64 + Math.random() * 6, s); ctx.lineTo(48 - rc, s + 3); ctx.fill(); }
+  }
+  // щиток і казенник
+  const sg = ctx.createLinearGradient(0, -12, 0, 12); sg.addColorStop(0, "#7a8a56"); sg.addColorStop(1, "#46532f"); ctx.fillStyle = sg; rr(-12, -13, 22, 26, 6); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#26334a"; rr(-9, -8, 12, 7, 3); ctx.fill();
+  ctx.restore();
+  for (const c of casings) { ctx.globalAlpha = Math.max(0, c.life / .7); ctx.fillStyle = "#e6c25a"; ctx.fillRect(c.x, c.y, 3, 5); } ctx.globalAlpha = 1;
+}
+function drawShahed(e) {
+  const R = e.r, sp = e.hit > 0 ? 1 : 0; ctx.lineWidth = 2; ctx.strokeStyle = "#0b0f18";
+  const body = ctx.createLinearGradient(-R, 0, R, 0); body.addColorStop(0, "#2a313f"); body.addColorStop(.5, sp ? "#ffffff" : "#6c7587"); body.addColorStop(1, "#262c39"); ctx.fillStyle = body;
+  // крило-дельта з вирізом ззаду і законцовками
+  ctx.beginPath(); ctx.moveTo(0, -R * 1.25); ctx.lineTo(R * 1.02, R * .85); ctx.lineTo(R * .92, R * 1.05); ctx.lineTo(R * .38, R * .72); ctx.lineTo(0, R * .9); ctx.lineTo(-R * .38, R * .72); ctx.lineTo(-R * .92, R * 1.05); ctx.lineTo(-R * 1.02, R * .85); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,.12)"; ctx.beginPath(); ctx.moveTo(0, -R * 1.1); ctx.lineTo(R * .6, R * .6); ctx.moveTo(0, -R * 1.1); ctx.lineTo(-R * .6, R * .6); ctx.stroke();
+  // фюзеляж
+  ctx.strokeStyle = "#0b0f18"; ctx.fillStyle = sp ? "#fff" : "#8a93a6"; rr(-R * .13, -R * .95, R * .26, R * 1.75, R * .1); ctx.fill(); ctx.stroke();
+  // пропелер
+  ctx.fillStyle = "rgba(210,220,240,.35)"; ctx.beginPath(); ctx.ellipse(0, R * .98, R * .42, R * .1, 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = "rgba(220,230,250,.8)"; ctx.lineWidth = 1.6; ctx.beginPath(); const pa = e.ph * 3; ctx.moveTo(Math.cos(pa) * R * .4, R * .98 + Math.sin(pa) * R * .08); ctx.lineTo(-Math.cos(pa) * R * .4, R * .98 - Math.sin(pa) * R * .08); ctx.stroke();
+  if (Math.sin(e.ph * .6) > .6) { glow(R * .95, R * .95, 7, "255,40,40", .9); ctx.fillStyle = "#ff3b3b"; ctx.beginPath(); ctx.arc(R * .95, R * .95, 1.6, 0, TAU); ctx.fill(); }
+}
+function drawMissile(e) {
+  const R = e.r, L = R * 3.2, W2 = R * .5, hit = e.hit > 0; ctx.lineWidth = 2; ctx.strokeStyle = "#0b0f18";
+  // полум'я хвоста
+  const fl = 14 + Math.sin(e.ph * 3) * 4; glow(0, L * .55, 24, "255,150,40", .75); ctx.fillStyle = "#ffb43a"; ctx.beginPath(); ctx.moveTo(-W2 * .6, L * .5); ctx.lineTo(0, L * .5 + fl + 8); ctx.lineTo(W2 * .6, L * .5); ctx.fill(); ctx.fillStyle = "#fff3b0"; ctx.beginPath(); ctx.moveTo(-W2 * .3, L * .5); ctx.lineTo(0, L * .5 + fl * .6); ctx.lineTo(W2 * .3, L * .5); ctx.fill();
+  // крила й стабілізатори
+  ctx.fillStyle = hit ? "#fff" : "#7d8798"; for (const [y, w] of [[.12, 1.5], [.42, 1.1]]) { ctx.beginPath(); ctx.moveTo(-W2, L * (y - .1)); ctx.lineTo(-W2 * (1 + w * 1.8), L * (y + .12)); ctx.lineTo(-W2, L * (y + .14)); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(W2, L * (y - .1)); ctx.lineTo(W2 * (1 + w * 1.8), L * (y + .12)); ctx.lineTo(W2, L * (y + .14)); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  // корпус
+  const g = ctx.createLinearGradient(-W2, 0, W2, 0); g.addColorStop(0, "#515c72"); g.addColorStop(.45, hit ? "#fff" : "#dfe5f0"); g.addColorStop(1, "#444e63"); ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(0, -L * .62); ctx.quadraticCurveTo(W2 * 1.05, -L * .36, W2, -L * .2); ctx.lineTo(W2, L * .5); ctx.lineTo(-W2, L * .5); ctx.lineTo(-W2, -L * .2); ctx.quadraticCurveTo(-W2 * 1.05, -L * .36, 0, -L * .62); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#8c2a2a"; ctx.fillRect(-W2, -L * .18, W2 * 2, 3);
+}
+function drawBallistic(e) {
+  const R = e.r, L = R * 3.4, W2 = R * .38, hit = e.hit > 0;
+  glow(0, L * .5, 36, "255,200,90", .8); ctx.fillStyle = "#ffe8a0"; ctx.beginPath(); ctx.moveTo(-W2, L * .5); ctx.lineTo(0, L * .5 + 40 + Math.sin(e.ph * 4) * 6); ctx.lineTo(W2, L * .5); ctx.fill();
+  ctx.lineWidth = 2; ctx.strokeStyle = "#0b0f18"; ctx.fillStyle = hit ? "#fff" : "#9a2f2f"; ctx.beginPath(); ctx.moveTo(-W2 * 2.4, L * .5); ctx.lineTo(-W2, L * .1); ctx.lineTo(W2, L * .1); ctx.lineTo(W2 * 2.4, L * .5); ctx.closePath(); ctx.fill(); ctx.stroke();
+  const g = ctx.createLinearGradient(-W2, 0, W2, 0); g.addColorStop(0, "#40495c"); g.addColorStop(.5, hit ? "#fff" : "#cfd6e4"); g.addColorStop(1, "#38415a"); ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(0, -L * .6); ctx.lineTo(W2, L * .1); ctx.lineTo(W2, L * .5); ctx.lineTo(-W2, L * .5); ctx.lineTo(-W2, L * .1); ctx.closePath(); ctx.fill(); ctx.stroke();
+}
+function drawJet(e) {
+  const R = e.r, hit = e.hit > 0; ctx.lineWidth = 2; ctx.strokeStyle = "#0b0f18";
+  glow(0, R * 1.1, 22, "255,160,60", .7); ctx.fillStyle = "#ffcf7a"; ctx.beginPath(); ctx.moveTo(-R * .2, R * 1.0); ctx.lineTo(0, R * 1.0 + 14 + Math.sin(e.ph * 4) * 4); ctx.lineTo(R * .2, R * 1.0); ctx.fill();
+  const g = ctx.createLinearGradient(-R, 0, R, 0); g.addColorStop(0, "#2f3645"); g.addColorStop(.5, hit ? "#fff" : "#7b8599"); g.addColorStop(1, "#2a303e"); ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(0, -R * 1.4); ctx.lineTo(R * .95, R * .7); ctx.lineTo(R * .4, R * .62); ctx.lineTo(R * .2, R * 1.05); ctx.lineTo(-R * .2, R * 1.05); ctx.lineTo(-R * .4, R * .62); ctx.lineTo(-R * .95, R * .7); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#1a2030"; ctx.beginPath(); ctx.ellipse(0, -R * .25, R * .13, R * .4, 0, 0, TAU); ctx.fill();
+}
+const ESPR = { shahed: ["units/enemy_shahed_prop_4x1", 4, 52, 46, 24], cruise: ["units/enemy_cruise_4x1", 4, 24, 62, 20], jet: ["units/enemy_jet_4x1", 4, 40, 52, 20], ballistic: ["units/enemy_ballistic_4x1", 4, 20, 64, 20] };
+function enemySprite(e) {
+  const d = ESPR[e.type]; if (!rdy(d[0])) return false;
+  const fi = Math.floor(clock * d[4]) % d[1];
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(Math.atan2(e.vy, e.vx) + Math.PI / 2);
+  frame(d[0], fi, d[1], -d[2] / 2, -d[3] / 2, d[2], d[3]);
+  if (e.type === "shahed") { frame("units/enemy_shahed_light_2x1", Math.floor(clock * 2) % 2, 2, -26, -23, 52, 46); }
+  if (e.hit > 0) { ctx.globalAlpha = Math.min(1, e.hit); if (e.type === "shahed" && rdy("units/enemy_shahed_hit")) ctx.drawImage(IMG["units/enemy_shahed_hit"], -26, -23, 52, 46); else { ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = e.hit * .55; frame(d[0], fi, d[1], -d[2] / 2, -d[3] / 2, d[2], d[3]); } }
+  ctx.restore();
+  if (e.max > 3.5 && e.hp < e.max) { ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(e.x - 14, e.y - e.r - 14, 28, 4); ctx.fillStyle = "#ff5a4a"; ctx.fillRect(e.x - 14, e.y - e.r - 14, 28 * Math.max(0, e.hp / e.max), 4); }
+  return true;
+}
+function drawEnemy(e) {
+  if (enemySprite(e)) return;
+  ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(Math.atan2(e.vy, e.vx) + Math.PI / 2); // фігури намальовані носом вгору
+  if (e.type === "shahed") drawShahed(e); else if (e.type === "jet") drawJet(e); else if (e.type === "ballistic") drawBallistic(e); else drawMissile(e);
+  ctx.restore();
+  if (e.max > 3.5 && e.hp < e.max) { ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(e.x - 14, e.y - e.r - 14, 28, 4); ctx.fillStyle = "#ff5a4a"; ctx.fillRect(e.x - 14, e.y - e.r - 14, 28 * Math.max(0, e.hp / e.max), 4); }
+}
+function drawBonus() {
+  if (!bonus) return; const y = bonus.y + Math.sin(bonus.ph) * 4, x = bonus.x;
+  { const im = rdy(bonus.kind === "bulb" ? "ui/bonus_bulb" : "ui/bonus_reb"); if (im) { ctx.drawImage(im, x - 24, y - 24, 48, 48); return; } }
+  if (bonus.kind === "bulb") { glow(x, y, 32, "255,225,110", .7); const bg = ctx.createRadialGradient(x - 3, y - 4, 1, x, y, 13); bg.addColorStop(0, "#fffbe6"); bg.addColorStop(1, "#ffc830"); ctx.fillStyle = bg; ctx.strokeStyle = "#7a4b00"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(x, y, 12, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#cfd8ea"; rr(x - 6, y + 10, 12, 7, 3); ctx.fill(); ctx.stroke(); }
+  else { glow(x, y, 32, "120,200,255", .7); ctx.fillStyle = "#2f86e6"; ctx.strokeStyle = "#05204a"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(x, y, 13, 0, TAU); ctx.fill(); ctx.stroke(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; for (let i = 1; i <= 3; i++) { ctx.beginPath(); ctx.arc(x, y + 6, i * 4, -2.4, -.74); ctx.stroke(); } }
+}
+function drawTele() {
+  for (const q of tele) { if (frame("units/warn_ballistic_4x1", Math.floor(clock * 10) % 4, 4, q.x - 17, 4, 34, 34)) { ctx.fillStyle = "rgba(255,60,50,.12)"; ctx.fillRect(q.x - 6, 38, 12, GROUND - 38); continue; } const a = .5 + .5 * Math.sin(t * 24); ctx.fillStyle = `rgba(255,60,50,${a})`; ctx.beginPath(); ctx.moveTo(q.x, 6); ctx.lineTo(q.x - 11, 28); ctx.lineTo(q.x + 11, 28); ctx.closePath(); ctx.fill(); ctx.fillStyle = "#fff"; ctx.font = "800 14px sans-serif"; ctx.textAlign = "center"; ctx.fillText("!", q.x, 25); ctx.fillStyle = "rgba(255,60,50,.12)"; ctx.fillRect(q.x - 6, 28, 12, GROUND - 28); }
+}
+function drawHUD() {
+  ctx.textAlign = "left"; ctx.font = "800 26px -apple-system,Segoe UI,Roboto,sans-serif"; ctx.lineWidth = 4; ctx.strokeStyle = "rgba(0,0,0,.5)"; ctx.fillStyle = "#fff"; ctx.strokeText(score, 14, 36); ctx.fillText(score, 14, 36);
+  ctx.font = "700 12px -apple-system,Segoe UI,Roboto,sans-serif"; ctx.fillStyle = "#bcd6ff";
+  ctx.fillText(mode === "camp" ? `Рівень ${lvIdx + 1} · ${Math.max(0, Math.ceil(lv.dur - t))} с` : `Зміна · ${Math.floor(t)} с`, 14, 54);
+  if (combo >= 6) { ctx.fillStyle = "#7dffb0"; ctx.fillText("Серія ×" + Math.min(5, 1 + Math.floor(combo / 6)), 14, 70); }
+  if (reb > 0) { ctx.fillStyle = "#8fd4ff"; ctx.fillText("📡 РЕБ " + reb.toFixed(1), 14, 86); }
+  const lifeOn = rdy("ui/ui_life_on"), lifeOff = rdy("ui/ui_life_off");
+  if (lifeOn && lifeOff) for (let i = 0; i < maxhp; i++) { const x = W - 14 - i * 21, on = i < hp; if (on) glow(x, 30, 14, "255,225,110", .45); ctx.drawImage(on ? lifeOn : lifeOff, x - 10, 14, 20, 25); }
+  else for (let i = 0; i < maxhp; i++) { const x = W - 16 - i * 20, y = 30, on = i < hp; if (on) glow(x, y, 14, "255,225,110", .55); ctx.fillStyle = on ? "#ffd84d" : "#2a3350"; ctx.strokeStyle = "#0e2a5c"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(x, y, 7, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = on ? "#cfd8ea" : "#46506f"; ctx.fillRect(x - 3.5, y + 6, 7, 4); }
+  // пауза
+  ctx.fillStyle = "rgba(0,0,0,.35)"; ctx.beginPath(); ctx.arc(PAUSE_BTN.x, PAUSE_BTN.y, 15, 0, TAU); ctx.fill(); ctx.fillStyle = "#fff"; ctx.fillRect(PAUSE_BTN.x - 5, PAUSE_BTN.y - 6, 3.5, 12); ctx.fillRect(PAUSE_BTN.x + 1.5, PAUSE_BTN.y - 6, 3.5, 12);
+  { const bw = 70, bx = GUN.x - bw / 2, by = H - 14; ctx.fillStyle = "rgba(0,0,0,.5)"; ctx.fillRect(bx - 1, by - 1, bw + 2, 8);
+    ctx.fillStyle = overheat ? "#ff4a3a" : heat > .7 ? "#ff9a3a" : "#ffd84d"; ctx.fillRect(bx, by, bw * heat, 6);
+    if (overheat) { ctx.fillStyle = "#fff"; ctx.font = "800 11px sans-serif"; ctx.textAlign = "center"; ctx.fillText("ОХОЛОДЖЕННЯ…", GUN.x, by - 4); } }
+  // кнопка ракети
+  const ok = ammo > 0 && rocketCd <= 0 && enemies.length > 0, bim = rdy("ui/ui_btn_yellow_rocket");
+  if (bim) {
+    if (ok) glow(RB.x + RB.w / 2, RB.y + RB.h / 2, 60, "255,170,50", .45 + .15 * Math.sin(clock * 6));
+    ctx.drawImage(bim, RB.x, RB.y, RB.w, RB.h);
+    if (!ok) { ctx.fillStyle = "rgba(6,14,38,.62)"; rr(RB.x + 3, RB.y + 3, RB.w - 6, RB.h - 8, 14); ctx.fill(); }
+    ctx.textAlign = "right"; ctx.font = "800 20px -apple-system,Segoe UI,Roboto,sans-serif"; ctx.lineWidth = 5; ctx.strokeStyle = "#0b1a38"; ctx.fillStyle = "#fff"; ctx.strokeText("×" + ammo, RB.x + RB.w - 10, RB.y + RB.h - 12); ctx.fillText("×" + ammo, RB.x + RB.w - 10, RB.y + RB.h - 12);
+    if (rocketCd > 0) { ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.fillRect(RB.x + 10, RB.y + RB.h - 8, (RB.w - 20) * (1 - rocketCd / 1.6), 4); }
+  } else {
+    const rb = { x: RB.x + RB.w / 2, y: RB.y + RB.h / 2, r: 30 };
+    glow(rb.x, rb.y, 46, ok ? "255,160,50" : "90,110,150", ok ? .55 : .25); ctx.fillStyle = ok ? "#e4731d" : "#38445e"; ctx.strokeStyle = "#0b1a38"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(rb.x, rb.y, rb.r, 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.font = "800 14px sans-serif"; ctx.textAlign = "center"; ctx.fillText("🚀×" + ammo, rb.x, rb.y + 5);
+  }
+  // банер рівня
+  if (banner.t > 0) { const a = Math.min(1, banner.t * 1.5, (3.2 - banner.t) * 3); ctx.globalAlpha = a; ctx.textAlign = "center"; ctx.font = "800 22px -apple-system,Segoe UI,Roboto,sans-serif"; ctx.lineWidth = 5; ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.fillStyle = "#fff"; ctx.strokeText(banner.text, W / 2, 130); ctx.fillText(banner.text, W / 2, 130); ctx.font = "700 14px sans-serif"; ctx.fillStyle = "#ffe27a"; wrapText(banner.sub, W / 2, 156, 300, 18); ctx.globalAlpha = 1; }
+}
+function wrapText(s, x, y, w, lh) { const words = s.split(" "); let line = ""; for (const wd of words) { const test = line + wd + " "; if (ctx.measureText(test).width > w && line) { ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineWidth = 4; ctx.strokeText(line, x, y); ctx.fillText(line, x, y); line = wd + " "; y += lh; } else line = test; } ctx.strokeStyle = "rgba(0,0,0,.6)"; ctx.lineWidth = 4; ctx.strokeText(line, x, y); ctx.fillText(line, x, y); }
+function render() {
+  ctx.save(); if (shake > 0) ctx.translate(rnd(-shake, shake) * .5, rnd(-shake, shake) * .5);
+  drawSky(); drawObject(); drawTele();
+  for (const p of parts) { if (p.sm) { ctx.globalAlpha = Math.max(0, p.life / p.max) * .45; ctx.fillStyle = p.col + "1)"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r * (1.6 - p.life / p.max * .6), 0, TAU); ctx.fill(); } }
+  ctx.globalAlpha = 1;
+  for (const e of enemies) drawEnemy(e);
+  drawBonus();
+  for (const r of rockets) { glow(r.x, r.y, 18, "255,170,60", .8); ctx.save(); ctx.translate(r.x, r.y); ctx.rotate(Math.atan2(r.vy, r.vx) + Math.PI / 2); ctx.fillStyle = "#eef2fa"; ctx.strokeStyle = "#0b1a38"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(3, -4); ctx.lineTo(3, 8); ctx.lineTo(-3, 8); ctx.lineTo(-3, -4); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = "#ffb43a"; ctx.beginPath(); ctx.moveTo(-2, 8); ctx.lineTo(0, 16 + Math.random() * 5); ctx.lineTo(2, 8); ctx.fill(); ctx.restore(); }
+  const tr = rdy("units/def_tracer");
+  for (const b of bullets) { if (tr) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2); ctx.globalCompositeOperation = "lighter"; ctx.drawImage(tr, -2, -3, 4, 30); ctx.restore(); } else { ctx.strokeStyle = "rgba(255,225,120,.95)"; ctx.lineWidth = 2.6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(b.x - b.vx * .028, b.y - b.vy * .028); ctx.stroke(); } }
+  drawGun();
+  if (reb > 0) { const dm = rdy("fx/fx_shield_dome"); if (dm) { ctx.globalAlpha = .5 + .18 * Math.sin(clock * 6); ctx.drawImage(dm, SUB.x - 170, 443, 340, 170); ctx.globalAlpha = .4; frame("fx/fx_reb_waves_6x1", Math.floor(clock * 12) % 6, 6, SUB.x - 80, 470, 160, 133); ctx.globalAlpha = 1; } }
+  for (const f of fxs) { const i = f.loop ? Math.floor(f.t * f.fps) % f.n : Math.min(f.n - 1, Math.floor(f.t * f.fps)); frame(f.k, i, f.n, f.x - f.w / 2, f.y - f.h / 2, f.w, f.h); }
+  for (const p of parts) { if (p.sm) continue; ctx.globalAlpha = Math.max(0, p.life / p.max); if (p.ring) { ctx.strokeStyle = p.col; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(p.x, p.y, p.ring * (1 - p.life / p.max), 0, TAU); ctx.stroke(); } else { ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, TAU); ctx.fill(); } }
+  ctx.globalAlpha = 1; ctx.font = "800 16px -apple-system,Segoe UI,Roboto,sans-serif"; ctx.textAlign = "center";
+  for (const p of pops) { ctx.globalAlpha = Math.min(1, p.life * 1.5); ctx.lineWidth = 4; ctx.strokeStyle = "rgba(0,0,0,.55)"; ctx.strokeText(p.txt, p.x, p.y); ctx.fillStyle = p.col; ctx.fillText(p.txt, p.x, p.y); }
+  ctx.globalAlpha = 1; if (flash > 0) { ctx.fillStyle = `rgba(255,60,40,${flash * .35})`; ctx.fillRect(0, 0, W, H); }
+  drawHUD(); ctx.restore();
+}
+
+// ======================= автопілот для тестів =======================
+let auto = false;
+function autoplay() { if (!auto || state !== "play") return; let best = null; for (const e of enemies) if (!best || e.y > best.y) best = e; if (best) { const lead = best.y > 0 ? 18 : 0; ptr.x = best.x + best.vx * .12; ptr.y = best.y + best.vy * .12 - lead * 0; ptr.down = true; if (rocketCd <= 0 && enemies.length > 3) launchRocket(); } else ptr.down = false; }
+
+// ======================= цикл =======================
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(.05, (now - last) / 1000); last = now; clock = now / 1000;
+  if (state === "play") { autoplay(); update(dt); }
+  else { t += dt; for (const p of parts) { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt; p.life -= dt; } parts = parts.filter(p => p.life > 0); }
+  render(); requestAnimationFrame(loop);
+}
+
+// ======================= екрани =======================
+const SCREENS = ["menu", "levels", "shop", "rate", "pause", "over", "load"];
+let prevScreen = "menu";
+function show(id) { if (id && id !== "over" && id !== "pause") prevScreen = id; SCREENS.forEach(s => $(s).classList.toggle("hide", s !== id)); }
+document.querySelectorAll("[data-back]").forEach(b => b.onclick = () => { show("menu"); fillMenu(); });
+function fillMenu() { $("coins").textContent = `🪙 ${save.coins} монет`; $("best").textContent = save.best ? `Найкращий рахунок: ${save.best}` : "Тримай палець на екрані — ЗУ стріляє туди; кнопка 🚀 — ракета ППО"; }
+function fillLevels() {
+  const g = $("lvGrid"); g.innerHTML = "";
+  LEVELS.forEach((L, i) => { const open = i === 0 || (save.stars[i - 1] || 0) > 0; const d = document.createElement("div"); d.className = "lv" + (open ? "" : " lock"); d.innerHTML = `${i + 1}<i>${open ? "★".repeat(save.stars[i] || 0) + "☆".repeat(3 - (save.stars[i] || 0)) : "🔒"}</i>`; d.onclick = () => open ? startRun("camp", i) : ($("lvInfo").textContent = "Спочатку пройди попередній рівень"); g.appendChild(d); });
+  $("lvInfo").textContent = "Обери рівень. Кожен — інший об'єкт і нові загрози.";
+}
+function fillShop() {
+  $("shopCoins").textContent = `🪙 ${save.coins}`; const box = $("shopList"); box.innerHTML = "";
+  UPS.forEach(u => { const lvl = save.up[u.k], max = lvl >= MAXUP, cost = upCost(u); const r = document.createElement("div"); r.className = "row";
+    r.innerHTML = `<div style="flex:1"><b>${u.n}</b><br><span>${u.d} · рівень ${lvl}/${MAXUP}</span></div>`; const b = document.createElement("button"); b.textContent = max ? "МАКС" : `🪙 ${cost}`; b.disabled = max || save.coins < cost;
+    b.onclick = () => { if (save.coins >= cost && !max) { save.coins -= cost; save.up[u.k]++; persist(); fillShop(); } }; r.appendChild(b); box.appendChild(r); });
+}
+let rateTab = "city";
+const DEMO = { cities: [["Дніпро", 184200, 312], ["Кам'янське", 121900, 207], ["Київ", 118400, 540], ["Одеса", 96300, 188], ["Харків", 70100, 133], ["Львів", 41800, 95]], users: [["Олекса", 8420, "Дніпро"], ["Марина", 7910, "Київ"], ["Тарас", 7600, "Кам'янське"], ["Ірина", 6980, "Одеса"], ["Андрій", 6410, "Харків"]] };
+async function fillRate() {
+  $("tCity").className = rateTab === "city" ? "sec" : "ghost"; $("tUsers").className = rateTab === "users" ? "sec" : "ghost";
+  const box = $("rateList"); box.innerHTML = '<p>Завантажую…</p>'; let data = null, demo = false;
+  if (API) { try { const r = await fetch(API.replace(/\/$/, "") + "/api/top?init_data=" + encodeURIComponent(tg ? tg.initData : "")); data = await r.json(); } catch (e) {} }
+  if (!data) { demo = true; data = { cities: DEMO.cities.map(c => ({ city: c[0], points: c[1], players: c[2] })), users: DEMO.users.map(u => ({ name: u[0], score: u[1], city: u[2] })), my: null }; }
+  box.innerHTML = "";
+  const rows = rateTab === "city" ? data.cities : data.users;
+  if (!rows.length) box.innerHTML = "<p>Поки що порожньо. Зіграй першим!</p>";
+  rows.slice(0, 20).forEach((x, i) => { const d = document.createElement("div"); d.className = "row"; const medal = ["🥇", "🥈", "🥉"][i] || i + 1;
+    d.innerHTML = rateTab === "city" ? `<div class="pos">${medal}</div><b>${esc(x.city)}</b><span>${x.players} гр.</span><em>${x.points}</em>` : `<div class="pos">${medal}</div><b>${esc(x.name)}</b><span>${esc(x.city || "")}</span><em>${x.score}</em>`; box.appendChild(d); });
+  const my = data.my; $("rateNote").textContent = demo ? "ДЕМО-дані. Реальний рейтинг міст працює, коли гра відкрита з бота." : (my && my.city ? `Твоє місто: ${my.city}${my.rank ? " — місце " + my.rank : ""}. Твій найкращий: ${my.best || 0}` : "Рейтинг міст рахується за містом із твоєї адреси в боті.");
+}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+$("tCity").onclick = () => { rateTab = "city"; fillRate(); }; $("tUsers").onclick = () => { rateTab = "users"; fillRate(); };
+$("bCamp").onclick = () => { fillLevels(); show("levels"); }; $("bEnd").onclick = () => startRun("endless", 0);
+$("bShop").onclick = () => { fillShop(); show("shop"); }; $("bRate").onclick = () => { show("rate"); fillRate(); };
+function pause(on) { if (on) { state = "pause"; ptr.down = false; show("pause"); } else { state = "play"; show(null); last = performance.now(); } }
+$("bResume").onclick = () => pause(false); $("bQuit").onclick = () => { state = "menu"; show("menu"); fillMenu(); };
+$("bAgain").onclick = () => startRun(mode, lvIdx); $("bNext").onclick = () => startRun("camp", lvIdx + 1); $("bMenu").onclick = () => { state = "menu"; show("menu"); fillMenu(); };
+$("bShare").onclick = () => {
+  const text = `Я набрав ${score} очок у «Захисти Світлячок» 💡 — збивав шахеди над енергетикою. Спробуй перевершити!`; const link = BOT ? `https://t.me/${BOT}` : location.href;
+  if (tg && tg.openTelegramLink) tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(link) + "&text=" + encodeURIComponent(text));
+  else if (navigator.share) navigator.share({ text, url: link }).catch(() => {}); else { try { navigator.clipboard.writeText(text + " " + link); $("ovNote").textContent = "Текст скопійовано."; } catch (e) {} }
+};
+async function submit(sc) {
+  if (!API) { $("ovNote").textContent = "Тестовий режим: рейтинг міст підключається через бота."; return; }
+  if (sc <= 0) return;
+  try { const r = await fetch(API.replace(/\/$/, "") + "/api/score", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ init_data: tg ? tg.initData : "", score: sc, mode, level: lvIdx + 1 }) });
+    const j = await r.json(); if (j && j.city) $("ovNote").textContent = `Очки додано до рейтингу міста «${j.city}»` + (j.rank ? ` (місце ${j.rank})` : "") + "."; else if (j && j.error) $("ovNote").textContent = "Рейтинг: " + j.error; }
+  catch (e) { $("ovNote").textContent = "Не вдалося відправити рахунок у рейтинг."; }
+}
+fillMenu(); show("menu"); $("menuMascot").src = AB + "mascot/mascot_happy.webp"; preload(CORE, 15000);
+window.__game = { get state() { return state; }, get score() { return score; }, get hp() { return hp; }, startRun, set auto(v) { auto = v; }, show, fillLevels, fillShop, fillRate, save, LEVELS, setT(v) { t = v; }, setReb(v) { reb = v; } };
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

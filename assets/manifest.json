@@ -1,0 +1,794 @@
+{
+ "notes": {
+  "def_pickup.png": {
+   "logical": [
+    110,
+    64
+   ],
+   "anchor": "bottom-center = колёса на земле"
+  },
+  "def_gunner_mount.png": {
+   "logical": [
+    80,
+    56
+   ],
+   "frames": "f0 покой, f1 отдача (стволы назад), f2 возврат; лист def_gunner_mount_3x1.png",
+   "pivot_px": [
+    140,
+    208
+   ],
+   "barrel_angle_deg": 25.9,
+   "muzzle_px": [
+    [
+     278,
+     67
+    ],
+    [
+     281,
+     93
+    ]
+   ],
+   "note": "стволы в исходнике подняты на barrel_angle_deg; в коде вычитайте этот угол из угла прицела"
+  },
+  "def_gunner_flash_*.png": {
+   "logical": [
+    40,
+    40
+   ],
+   "origin_px": [
+    6,
+    80
+   ],
+   "note": "ставьте origin в muzzle_px, поворачивайте вместе со стволом"
+  },
+  "missiles": {
+   "files": "def_aa_missile, enemy_cruise, enemy_jet, enemy_ballistic: .png = кадр 0, _4x1.png = 4 кадра пламени",
+   "fps": 20,
+   "orientation": "нос вверх"
+  },
+  "enemy_shahed": {
+   "logical": [
+    52,
+    46
+   ],
+   "prop": "enemy_shahed_prop_4x1.png, 24 fps цикл",
+   "light": "enemy_shahed_light_2x1.png накладывается поверх, тот же размер кадра, мигание 2 fps",
+   "hit": "enemy_shahed_hit.png — белая вспышка 1 кадр"
+  },
+  "fx_explosion_med_6x1.png": {
+   "frame": [
+    256,
+    256
+   ],
+   "logical": [
+    64,
+    64
+   ],
+   "fps": 20,
+   "loop": false
+  },
+  "fx_explosion_big_8x1.png": {
+   "frame": [
+    384,
+    384
+   ],
+   "logical": [
+    96,
+    96
+   ],
+   "fps": 18,
+   "loop": false
+  },
+  "fx_rocket_blast_8x1.png": {
+   "frame": [
+    512,
+    512
+   ],
+   "logical": [
+    128,
+    128
+   ],
+   "fps": 18,
+   "loop": false
+  },
+  "fx_hit_spark_4x1.png": {
+   "frame": [
+    96,
+    96
+   ],
+   "logical": [
+    24,
+    24
+   ],
+   "fps": 24,
+   "loop": false
+  },
+  "fx_smoke_puff_6x1.png": {
+   "frame": [
+    128,
+    128
+   ],
+   "logical": [
+    32,
+    32
+   ],
+   "fps": 12,
+   "loop": false
+  },
+  "fx_fire_loop_6x1.png": {
+   "frame": [
+    160,
+    224
+   ],
+   "logical": [
+    40,
+    56
+   ],
+   "fps": 12,
+   "loop": true,
+   "anchor": "bottom-center"
+  },
+  "fx_shield_ring.png": {
+   "frame": [
+    320,
+    320
+   ],
+   "logical": [
+    80,
+    80
+   ],
+   "note": "пульс масштабом кодом"
+  },
+  "fx_reb_waves_6x1.png": {
+   "frame": [
+    320,
+    320
+   ],
+   "logical": [
+    80,
+    80
+   ],
+   "fps": 12,
+   "loop": true
+  },
+  "mascot_*.png": {
+   "logical": [
+    160,
+    200
+   ],
+   "anchor": "bottom-center"
+  },
+  "mascot_pulse_4x1.png": {
+   "frame": [
+    320,
+    400
+   ],
+   "scale": "2x (не 4x — чтобы лист весил < 600 КБ)",
+   "fps": 6,
+   "loop": true
+  },
+  "obj_*": {
+   "scale": "2x логического (600 px шириной)",
+   "anchor": "bottom-center",
+   "note": "вырезаны из атласа ~120 px и увеличены — черновик, лучше перегенерировать крупно"
+  }
+ },
+ "files": {
+  "bg/bg_cloud_a.png": {
+   "px": [
+    900,
+    300
+   ],
+   "kb": 36
+  },
+  "bg/bg_cloud_b.png": {
+   "px": [
+    900,
+    300
+   ],
+   "kb": 35
+  },
+  "bg/bg_cloud_c.png": {
+   "px": [
+    900,
+    300
+   ],
+   "kb": 36
+  },
+  "bg/bg_dawn_far_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 10
+  },
+  "bg/bg_dawn_ground.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 16
+  },
+  "bg/bg_dawn_near_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 93
+  },
+  "bg/bg_dawn_sky.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 465
+  },
+  "bg/bg_dusk_far_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 10
+  },
+  "bg/bg_dusk_ground.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 16
+  },
+  "bg/bg_dusk_near_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 116
+  },
+  "bg/bg_dusk_sky.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 391
+  },
+  "bg/bg_moon.png": {
+   "px": [
+    600,
+    600
+   ],
+   "kb": 111
+  },
+  "bg/bg_night_far_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 10
+  },
+  "bg/bg_night_ground.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 16
+  },
+  "bg/bg_night_near_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 113
+  },
+  "bg/bg_night_sky.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 404
+  },
+  "bg/bg_searchlight_beam.png": {
+   "px": [
+    240,
+    1920
+   ],
+   "kb": 25
+  },
+  "bg/bg_storm_far_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 10
+  },
+  "bg/bg_storm_ground.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 16
+  },
+  "bg/bg_storm_near_city.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 99
+  },
+  "bg/bg_storm_sky.png": {
+   "px": [
+    1080,
+    1920
+   ],
+   "kb": 425
+  },
+  "fx/fx_bullet_ap.png": {
+   "px": [
+    256,
+    96
+   ],
+   "kb": 26
+  },
+  "fx/fx_explosion_big_8x1.png": {
+   "px": [
+    3072,
+    384
+   ],
+   "kb": 218
+  },
+  "fx/fx_explosion_med_6x1.png": {
+   "px": [
+    1536,
+    256
+   ],
+   "kb": 373
+  },
+  "fx/fx_fire_loop_6x1.png": {
+   "px": [
+    960,
+    224
+   ],
+   "kb": 230
+  },
+  "fx/fx_hit_spark_4x1.png": {
+   "px": [
+    384,
+    96
+   ],
+   "kb": 43
+  },
+  "fx/fx_reb_waves_6x1.png": {
+   "px": [
+    1920,
+    320
+   ],
+   "kb": 121
+  },
+  "fx/fx_rocket_blast_8x1.png": {
+   "px": [
+    4096,
+    512
+   ],
+   "kb": 324
+  },
+  "fx/fx_shield_dome.png": {
+   "px": [
+    480,
+    240
+   ],
+   "kb": 140
+  },
+  "fx/fx_shield_ring.png": {
+   "px": [
+    320,
+    320
+   ],
+   "kb": 44
+  },
+  "fx/fx_smoke_puff_6x1.png": {
+   "px": [
+    768,
+    128
+   ],
+   "kb": 77
+  },
+  "fx/fx_smoke_trail.png": {
+   "px": [
+    512,
+    256
+   ],
+   "kb": 102
+  },
+  "mascot/mascot_cheer.png": {
+   "px": [
+    640,
+    800
+   ],
+   "kb": 294
+  },
+  "mascot/mascot_happy.png": {
+   "px": [
+    640,
+    800
+   ],
+   "kb": 230
+  },
+  "mascot/mascot_off.png": {
+   "px": [
+    640,
+    800
+   ],
+   "kb": 190
+  },
+  "mascot/mascot_pulse_4x1.png": {
+   "px": [
+    1280,
+    400
+   ],
+   "kb": 342
+  },
+  "mascot/mascot_worried.png": {
+   "px": [
+    640,
+    800
+   ],
+   "kb": 182
+  },
+  "objects/obj_gas_burning.png": {
+   "px": [
+    600,
+    240
+   ],
+   "kb": 94
+  },
+  "objects/obj_gas_damaged.png": {
+   "px": [
+    600,
+    240
+   ],
+   "kb": 81
+  },
+  "objects/obj_gas_ok.png": {
+   "px": [
+    600,
+    240
+   ],
+   "kb": 68
+  },
+  "objects/obj_hpp_burning.png": {
+   "px": [
+    600,
+    200
+   ],
+   "kb": 61
+  },
+  "objects/obj_hpp_damaged.png": {
+   "px": [
+    600,
+    200
+   ],
+   "kb": 62
+  },
+  "objects/obj_hpp_ok.png": {
+   "px": [
+    600,
+    200
+   ],
+   "kb": 58
+  },
+  "objects/obj_substation_burning.png": {
+   "px": [
+    600,
+    220
+   ],
+   "kb": 79
+  },
+  "objects/obj_substation_damaged.png": {
+   "px": [
+    600,
+    220
+   ],
+   "kb": 74
+  },
+  "objects/obj_substation_ok.png": {
+   "px": [
+    600,
+    220
+   ],
+   "kb": 75
+  },
+  "objects/obj_tpp_burning.png": {
+   "px": [
+    600,
+    260
+   ],
+   "kb": 89
+  },
+  "objects/obj_tpp_damaged.png": {
+   "px": [
+    600,
+    260
+   ],
+   "kb": 90
+  },
+  "objects/obj_tpp_ok.png": {
+   "px": [
+    600,
+    260
+   ],
+   "kb": 100
+  },
+  "ui/bonus_bulb.png": {
+   "px": [
+    192,
+    192
+   ],
+   "kb": 61
+  },
+  "ui/bonus_reb.png": {
+   "px": [
+    192,
+    192
+   ],
+   "kb": 54
+  },
+  "ui/ui_btn_blue_shield.png": {
+   "px": [
+    384,
+    256
+   ],
+   "kb": 71
+  },
+  "ui/ui_btn_yellow_rocket.png": {
+   "px": [
+    384,
+    256
+   ],
+   "kb": 82
+  },
+  "ui/ui_life_off.png": {
+   "px": [
+    128,
+    160
+   ],
+   "kb": 23
+  },
+  "ui/ui_life_on.png": {
+   "px": [
+    128,
+    160
+   ],
+   "kb": 28
+  },
+  "ui/ui_radar.png": {
+   "px": [
+    256,
+    256
+   ],
+   "kb": 92
+  },
+  "ui/ui_rating.png": {
+   "px": [
+    176,
+    176
+   ],
+   "kb": 33
+  },
+  "ui/ui_refresh.png": {
+   "px": [
+    176,
+    176
+   ],
+   "kb": 46
+  },
+  "ui/ui_settings.png": {
+   "px": [
+    176,
+    176
+   ],
+   "kb": 47
+  },
+  "ui/ui_stats.png": {
+   "px": [
+    176,
+    176
+   ],
+   "kb": 27
+  },
+  "ui/ui_trophy.png": {
+   "px": [
+    176,
+    176
+   ],
+   "kb": 39
+  },
+  "units/def_aa_missile.png": {
+   "px": [
+    56,
+    168
+   ],
+   "kb": 11
+  },
+  "units/def_aa_missile_4x1.png": {
+   "px": [
+    224,
+    168
+   ],
+   "kb": 17
+  },
+  "units/def_casing.png": {
+   "px": [
+    24,
+    40
+   ],
+   "kb": 2
+  },
+  "units/def_gunner_flash_1.png": {
+   "px": [
+    160,
+    160
+   ],
+   "kb": 21
+  },
+  "units/def_gunner_flash_2.png": {
+   "px": [
+    160,
+    160
+   ],
+   "kb": 20
+  },
+  "units/def_gunner_flash_3.png": {
+   "px": [
+    160,
+    160
+   ],
+   "kb": 13
+  },
+  "units/def_gunner_flash_3x1.png": {
+   "px": [
+    480,
+    160
+   ],
+   "kb": 54
+  },
+  "units/def_gunner_mount.png": {
+   "px": [
+    320,
+    224
+   ],
+   "kb": 74
+  },
+  "units/def_gunner_mount_3x1.png": {
+   "px": [
+    960,
+    224
+   ],
+   "kb": 119
+  },
+  "units/def_gunner_mount_f0.png": {
+   "px": [
+    320,
+    224
+   ],
+   "kb": 74
+  },
+  "units/def_gunner_mount_f1.png": {
+   "px": [
+    320,
+    224
+   ],
+   "kb": 73
+  },
+  "units/def_gunner_mount_f2.png": {
+   "px": [
+    320,
+    224
+   ],
+   "kb": 74
+  },
+  "units/def_pickup.png": {
+   "px": [
+    440,
+    256
+   ],
+   "kb": 105
+  },
+  "units/def_radar_truck.png": {
+   "px": [
+    480,
+    400
+   ],
+   "kb": 207
+  },
+  "units/def_tracer.png": {
+   "px": [
+    16,
+    120
+   ],
+   "kb": 1
+  },
+  "units/enemy_ballistic.png": {
+   "px": [
+    80,
+    256
+   ],
+   "kb": 30
+  },
+  "units/enemy_ballistic_4x1.png": {
+   "px": [
+    320,
+    256
+   ],
+   "kb": 52
+  },
+  "units/enemy_cruise.png": {
+   "px": [
+    96,
+    248
+   ],
+   "kb": 19
+  },
+  "units/enemy_cruise_4x1.png": {
+   "px": [
+    384,
+    248
+   ],
+   "kb": 30
+  },
+  "units/enemy_jet.png": {
+   "px": [
+    160,
+    208
+   ],
+   "kb": 37
+  },
+  "units/enemy_jet_4x1.png": {
+   "px": [
+    640,
+    208
+   ],
+   "kb": 55
+  },
+  "units/enemy_shahed.png": {
+   "px": [
+    208,
+    184
+   ],
+   "kb": 31
+  },
+  "units/enemy_shahed_hit.png": {
+   "px": [
+    208,
+    184
+   ],
+   "kb": 22
+  },
+  "units/enemy_shahed_light_2x1.png": {
+   "px": [
+    416,
+    184
+   ],
+   "kb": 2
+  },
+  "units/enemy_shahed_prop_4x1.png": {
+   "px": [
+    832,
+    184
+   ],
+   "kb": 38
+  },
+  "units/warn_ballistic.png": {
+   "px": [
+    112,
+    112
+   ],
+   "kb": 15
+  },
+  "units/warn_ballistic_4x1.png": {
+   "px": [
+    448,
+    112
+   ],
+   "kb": 49
+  }
+ }
+}
